@@ -1,0 +1,86 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "base-compiler-flags",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "base-sdl2",
+      "hidden": true,
+      "inherits": "base-compiler-flags",
+      "cacheVariables": { "BACKEND": "SDL2" }
+    },
+    {
+      "name": "base-raylib",
+      "hidden": true,
+      "inherits": "base-compiler-flags",
+      "cacheVariables": { "BACKEND": "RAYLIB" }
+    },
+    {
+      "name": "sdl2-debug",
+      "displayName": "SDL2 Debug",
+      "inherits": "base-sdl2",
+      "binaryDir": "${sourceDir}/build/sdl2-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "USE_ASAN": "OFF",
+        "USE_VALGRIND": "ON"
+      }
+    },
+    {
+      "name": "sdl2-asan",
+      "displayName": "SDL2 ASan",
+      "inherits": "base-sdl2",
+      "binaryDir": "${sourceDir}/build/sdl2-asan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "USE_ASAN": "ON",
+        "USE_VALGRIND": "OFF"
+      }
+    },
+    {
+      "name": "sdl2-release",
+      "displayName": "SDL2 Release",
+      "inherits": "base-sdl2",
+      "binaryDir": "${sourceDir}/build/sdl2-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "USE_ASAN": "OFF",
+        "USE_VALGRIND": "OFF"
+      }
+    },
+    {
+      "name": "raylib-debug",
+      "displayName": "Raylib Debug",
+      "inherits": "base-raylib",
+      "binaryDir": "${sourceDir}/build/raylib-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "USE_ASAN": "OFF",
+        "USE_VALGRIND": "OFF"
+      }
+    },
+    {
+      "name": "raylib-release",
+      "displayName": "Raylib Release",
+      "inherits": "base-raylib",
+      "binaryDir": "${sourceDir}/build/raylib-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "USE_ASAN": "OFF",
+        "USE_VALGRIND": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "sdl2-debug", "configurePreset": "sdl2-debug" },
+    { "name": "sdl2-asan", "configurePreset": "sdl2-asan" },
+    { "name": "sdl2-release", "configurePreset": "sdl2-release" },
+    { "name": "raylib-debug", "configurePreset": "raylib-debug" },
+    { "name": "raylib-release", "configurePreset": "raylib-release" }
+  ]
+}

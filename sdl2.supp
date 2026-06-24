@@ -1,0 +1,69 @@
+{
+   ignore_libsdl2_leaks
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   obj:*libSDL2*
+}
+{
+   ignore_libsdl2_conds
+   Memcheck:Cond
+   ...
+   obj:*libSDL2*
+}
+
+{
+   ignore_libsdl3_leaks
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   obj:*libSDL3*
+}
+{
+   ignore_libsdl3_conds
+   Memcheck:Cond
+   ...
+   obj:*libSDL3*
+}
+
+{
+   ignore_nvidia_egl_leaks
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   obj:*libEGL_nvidia*
+}
+{
+   ignore_nvidia_egl_conds
+   Memcheck:Cond
+   ...
+   obj:*libEGL_nvidia*
+}
+
+{
+   ignore_wayland_leaks
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   obj:*libwayland-client*
+}
+{
+   ignore_wayland_conds
+   Memcheck:Cond
+   ...
+   obj:*libwayland-client*
+}
+
+{
+   ignore_libgallium_leaks
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   obj:*libgallium*
+}
+{
+   ignore_libgallium_conds
+   Memcheck:Cond
+   ...
+   obj:*libgallium*
+}
