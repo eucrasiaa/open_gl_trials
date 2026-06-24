@@ -59,7 +59,7 @@ case "$1" in
         find . -mindepth 1 -delete
         ;;
     k)
-      pkill render_trials
+      pkill ${PROJECT_NAME} 
       ;;
     *)
       echo "Usage: ./b.sh [(d)ebug| (f)inalrelease|(a)san|(r)un|(val)grind|clean] [ -> sdl2 <- |raylib]"

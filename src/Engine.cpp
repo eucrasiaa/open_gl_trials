@@ -1,4 +1,6 @@
 #include "Engine.hpp"
+#include <SDL_error.h>
+#include <glad/glad.h>
 
 SDL_Window* Engine::window = nullptr;
 SDL_GLContext Engine::glContext = nullptr;
@@ -8,7 +10,7 @@ std::vector<Node*> Engine::sceneNodes;
 
 bool Engine::init(const char* title, int width, int height) {
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    printf("SDL Init Error: %s\n", SDL_GetError());
+    std::cerr<<"SDL Init Error: %s\n"<<SDL_GetError()<<"\n";
     return false;
   }
 
@@ -27,23 +29,28 @@ bool Engine::init(const char* title, int width, int height) {
       width, height, 
       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
   if (!window) {
-    printf("Window Error: %s\n", SDL_GetError());
+    std::cerr<<"Window Error: %s\n"<<SDL_GetError()<<"\n";
     return false;
   }
 
   glContext = SDL_GL_CreateContext(window);
-
-  // now ready to use!
-
-
   if (!glContext) {
-    printf("OpenGL Context Error: %s\n", SDL_GetError());
+    std::cerr<<"OpenGL Context Error: %s\n"<<SDL_GetError()<<"\n";
     return false;
   }
+  if(!SDL_GL_MakeCurrent(window, glContext)){
 
-  // Synchronize frame swap to monitor vertical blank refresh 
+  }
+
+  //init GLAD
+  if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+    std::cerr<<"Failed to initialize Glad: most recent SDL Err: %s\n"<<SDL_GetError()<<"\n";
+    return -1;
+  }
+  // 0 = vsync off, 1 = vsync, -1 = adaptive vsync (?)
   SDL_GL_SetSwapInterval(1); 
 
+  glViewport(0,0,width,height);
   isRunning = true;
   return true;
 }
@@ -71,16 +78,15 @@ void Engine::handleEvents() {
 void Engine::changeResolution(int direction) {
   int newIndex = currentResIndex + direction;
 
-  // Bounds check to keep within our fixed array size (0 to 3)
   if (newIndex >= 0 && newIndex < 4) {
     currentResIndex = newIndex;
     Resolution target = resPool[currentResIndex];
 
-    // Tells the OS windowing system to instantly snap window dimensions
+    // tell OS
     SDL_SetWindowSize(window, target.width, target.height);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-
-    printf("Resolution changed to: %dx%d\n", target.width, target.height);
+    glViewport(0,0,target.width, target.height);
+    std::cout<<"Resolution changed to:"<< target.width<<", "<<target.height<<"\n";
   }
 }
 
@@ -89,18 +95,18 @@ void Engine::update(double dt) {
   if (sceneNodes.size() > 1) {
     Node* player = sceneNodes[1];
 
-    float speed = 150.0f; // Pixels per second
+    float speed = 150.0f;
     player->position.x += speed * static_cast<float>(dt);
   }
 }
 
 void Engine::render() {
-  // glClear(GL_COLOR_BUFFER_BIT);
+  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-  // 2. Loop through every active engine spatial node
   for (auto* node : sceneNodes) {
     if (node != nullptr) {
-      node->render(); // Dispatches internal RenderElems
+      node->render(); // each node will share their rendering 
     }
   }
 }
@@ -133,7 +139,7 @@ void Engine::run() {
 
     render();
 
-    // Swap back-buffer to screen front-buffer frame pipeline
+    // swap back to front
     SDL_GL_SwapWindow(window);
   }
 }
