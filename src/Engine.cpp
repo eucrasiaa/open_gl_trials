@@ -1,7 +1,6 @@
 #include "Engine.hpp"
 #include <SDL_error.h>
 #include <glad/glad.h>
-
 SDL_Window* Engine::window = nullptr;
 SDL_GLContext Engine::glContext = nullptr;
 bool Engine::isRunning = false;
@@ -14,20 +13,18 @@ bool Engine::init(const char* title, int width, int height) {
     return false;
   }
 
-
-
   // // Set core OpenGL context parameters before window generation
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
   window = SDL_CreateWindow(title, 
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
       width, height, 
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_ALWAYS_ON_TOP);
   if (!window) {
     std::cerr<<"Window Error: %s\n"<<SDL_GetError()<<"\n";
     return false;
@@ -52,6 +49,15 @@ bool Engine::init(const char* title, int width, int height) {
 
   glViewport(0,0,width,height);
   isRunning = true;
+  
+
+  // sys info 
+  std::cout<< "-Vendor "            << glGetString(GL_VENDOR)    << 
+              "\n-Renderer "        << glGetString(GL_RENDERER) <<
+              "\n-Version "         << glGetString(GL_VERSION)  <<
+              "\n-Shading Language "<< glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+  // glBindBuffer()
+  // glBindBufer
   return true;
 }
 
@@ -100,25 +106,15 @@ void Engine::update(double dt) {
   }
 }
 
-void Engine::render() {
-  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-  for (auto* node : sceneNodes) {
-    if (node != nullptr) {
-      node->render(); // each node will share their rendering 
-    }
-  }
-}
 
 void Engine::run() {
   double accumulator = 0.0;
   const double FIXED_DT = 1.0 / 60.0; 
   const double MAX_DELTA = 0.25;
 
+  double elapsedTime = 0.0;
   uint64_t frequency = SDL_GetPerformanceFrequency();
   uint64_t currentTicks = SDL_GetPerformanceCounter();
-
   while (isRunning) {
     uint64_t newTicks = SDL_GetPerformanceCounter();
     double frameTime = static_cast<double>(newTicks - currentTicks) / frequency;
@@ -127,7 +123,7 @@ void Engine::run() {
     if (frameTime > MAX_DELTA) {
       frameTime = MAX_DELTA;
     }
-
+    elapsedTime += (frameTime * timeScale);
     accumulator += (frameTime * timeScale);
 
     handleEvents();
@@ -137,7 +133,7 @@ void Engine::run() {
       accumulator -= FIXED_DT;
     }
 
-    render();
+    render(elapsedTime);
 
     // swap back to front
     SDL_GL_SwapWindow(window);

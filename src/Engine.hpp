@@ -1,4 +1,5 @@
 #pragma once
+#include <glad/glad.h>
 #include <SDL2/SDL.h>
 #include "SceneElems.hpp"
 
@@ -19,7 +20,7 @@ public:
 private:
     static void handleEvents();
     static void update(double dt);
-    static void render();
+    static void render(double dt);
     
     struct Resolution { 
       int width; 

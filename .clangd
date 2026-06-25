@@ -1,0 +1,12 @@
+CompileFlags:
+  Add: [
+    "-DGL_GLEXT_PROTOTYPES",
+    "-include", "GL/gl.h" # fixes LSP 
+  ]
+  Remove: [
+    "-include*glad.h" #for LSP
+  ]
+Diagnostics:
+  Suppress: [
+    "pp_hash_error"
+  ]
