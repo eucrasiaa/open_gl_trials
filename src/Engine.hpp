@@ -1,16 +1,17 @@
 #pragma once
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
+#include "RenderServer.hpp"
 #include "SceneElems.hpp"
+
 
 class Engine {
 public:
     static bool init(const char* title, int width, int height);
     static void run();
     static void shutdown();
-
-    static SDL_Window* window;
-    static SDL_GLContext glContext;
+    
+    static RenderServer *renderServer;
     static bool isRunning;
     static double timeScale;
 
