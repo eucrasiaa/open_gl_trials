@@ -162,6 +162,8 @@ int main(int argc, char* argv[]) {
     VertexSpecification();
     CreateGraphicsPipeline();
 
+
+    std::cout<<gVertexArrayObject<< " " << gVertexBufferObject << " " << gGraphicsShaderPipelineProgram << std::endl;
     Node* background = new Node();
     background->position = Vec2::ZERO;
     background->scale = Vec2(1280.0f, 720.0f);

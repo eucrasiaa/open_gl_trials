@@ -2,7 +2,7 @@
 set auto-solib-add off
 
 # Keep your code's symbols active
-file ./build/sdl2-debug/render_trials
+file ./build/OpenGL_first
 
 # General UI/Behavior 
 set disassembly-flavor intel
