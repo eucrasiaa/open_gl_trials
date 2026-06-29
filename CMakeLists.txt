@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(OpenGL_first LANGUAGES CXX)
+project(OpenGL_first LANGUAGES C CXX)
 
 
 # presets reminder:
@@ -81,39 +81,58 @@ if(BACKEND STREQUAL "SDL2")
     message(STATUS "Configuring project with SDL2 backend")
 
     # gladslop
-    if(NOT TARGET glad::glad)
-      set(GLAD_INCLUDE_DIR "/usr/local/include")
-      set(GLAD_LIBRARY "/usr/local/lib/libglad.a")
-      add_library(glad::glad STATIC IMPORTED)
-      set_target_properties(glad::glad PROPERTIES
-          INTERFACE_INCLUDE_DIRECTORIES "${GLAD_INCLUDE_DIR}"
-          IMPORTED_LOCATION "${GLAD_LIBRARY}"
-      )
-      find_package(OpenGL REQUIRED)
-      find_package(Threads REQUIRED)
+if(NOT TARGET glad::glad)
+    # 1. Create a local target using standard alphanumeric naming
+    add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c") 
+    
+        set_target_properties(glad PROPERTIES 
+        LINKER_LANGUAGE C
+        EXTERNAL_OBJECT OFF
+    )
+    # 2. Add properties to the local target
+    target_include_directories(glad PUBLIC 
+        "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
+    )
+    
+    find_package(OpenGL REQUIRED)
+    find_package(Threads REQUIRED)
 
-      target_link_libraries(glad::glad INTERFACE 
-          OpenGL::GL 
-          Threads::Threads 
-          ${CMAKE_DL_LIBS} # -ldl? 
-      )
-    endif()
+    target_link_libraries(glad PUBLIC 
+        OpenGL::GL 
+        Threads::Threads 
+        ${CMAKE_DL_LIBS}
+    )
+
+    # 3. Create the alias so target_link_libraries(... glad::glad) works downstream
+    add_library(glad::glad ALIAS glad)
+endif()
     
     target_link_libraries(${PROJECT_NAME} PRIVATE glad::glad)
 
 
     find_package(SDL2 REQUIRED)
 
-    if(TARGET SDL2::SDL2)
-        target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
-        # Safely check and link SDL2::main if it exists on this platform
-        if(TARGET SDL2::main)
-            target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::main)
-        endif()
-    else()
-        target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
-        target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
-    endif()
+if(TARGET SDL2::SDL2)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
+    target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
+endif()
+
+# This tells the compiler/linker to look for standard "main" instead of "WinMain"
+if(MINGW)
+    target_link_options(${PROJECT_NAME} PRIVATE "-mconsole")
+endif()
+    #
+    #     if(MINGW OR CYGWIN)
+    #     target_link_libraries(${PROJECT_NAME} PRIVATE 
+    #         setupapi
+    #         winmm
+    #         version
+    #         imm32
+    #         mingw32
+    #     )
+    # endif()
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BACKEND_SDL2)
 elseif(BACKEND STREQUAL "RAYLIB")
     message(STATUS "Configuring project with Raylib backend")
@@ -161,7 +180,9 @@ add_custom_target(run
     COMMENT "Executing binary ${PROJECT_NAME}"
 )
 
-
+if(MINGW)
+    target_link_options(${PROJECT_NAME} PRIVATE "-fuse-ld=lld")
+endif()
 
 # be willing to toggle supressions. it helps tho
 if(USE_VALGRIND)
