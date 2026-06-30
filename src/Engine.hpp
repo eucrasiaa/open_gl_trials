@@ -5,37 +5,54 @@
 #include "SceneElems.hpp"
 
 
+
+// RenderServer *Engine::renderServer = nullptr;
+// bool Engine::isRunning = false;
+// double Engine::timeScale = 1.0;
+// std::vector<Node*> Engine::sceneNodes;
 class Engine {
-public:
-    static bool init(const char* title, int width, int height);
-    static void run();
-    static void shutdown();
-    
-    static RenderServer *renderServer;
-    static bool isRunning;
-    static double timeScale;
+  public:
+    bool init(const char* title, int width, int height);
+    void run();
+    void shutdown();
 
-    static void addNode(Node* node);
+    // RenderServer *renderServer ;
+    bool isRunning = false;
+    double timeScale = 1.0;
 
-    static std::vector<Node*> sceneNodes;
+
+
+    void addNode(Node* node);
+
+    std::vector<Node*> sceneNodes;
 
     static Engine& Get() {
-        static Engine instance;
-        return instance;
+      static Engine instance;
+      return instance;
     }
 
-private:
-    Engine() = default;
-    static void handleEvents();
-    static void update(double dt);
-    static void render(double dt);
-    
+  private:
+    void handleEvents();
+    void update(double dt);
+    void render(double dt);
+
     struct Resolution { 
       int width; 
       int height; 
     };
-    static const Resolution resPool[4];
-    static int currentResIndex;
-    static void changeResolution(int direction);
+    const Resolution resPool[4] = {
+      { 640,  360 },
+      { 1280, 720 },
+      { 1600, 900 },
+      { 1920, 1080 }
+    };
+    int currentResIndex=1;
+    void changeResolution(int direction);
 
+
+
+    Engine() = default;
+    ~Engine() = default;
+    Engine(const Engine&) = delete;
+    Engine& operator=(const Engine&) = delete;
 };

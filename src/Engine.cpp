@@ -2,15 +2,8 @@
 #include "RenderServer.hpp"
 #include <SDL_error.h>
 #include <glad/glad.h>
-
-RenderServer *Engine::renderServer = nullptr;
-bool Engine::isRunning = false;
-double Engine::timeScale = 1.0;
-std::vector<Node*> Engine::sceneNodes;
-
 bool Engine::init(const char* title, int width, int height) {
-  Engine::renderServer = &RenderServer::Get();
-  if(!RenderServer::init(title, width, height)){
+  if(!RenderServer::Get().init(title, width, height)){
   // if(!renderServer->init(title, width, height)){
     std::cerr<<"render server failed to initialize!\n";
     return false;
@@ -45,7 +38,7 @@ void Engine::changeResolution(int direction) {
   if (newIndex >= 0 && newIndex < 4) {
     currentResIndex = newIndex;
     Resolution target = resPool[currentResIndex];
-    if (renderServer->changeResolution(target.width, target.height) < 0){
+    if (RenderServer::Get().changeResolution(target.width, target.height) < 0){
       std::cerr<< " failed to change resolution... uh oh!\n";
     }
     // tell OS
@@ -91,7 +84,7 @@ void Engine::run() {
     }
     render(elapsedTime); // loads renderServer if needed
 
-    renderServer->render(elapsedTime);
+    RenderServer::Get().render(elapsedTime);
   }
 }
 void Engine::addNode(Node* node) {
@@ -105,15 +98,8 @@ void Engine::shutdown() {
     delete node;
   }
   sceneNodes.clear();
-  renderServer->shutdown();
+  RenderServer::Get().shutdown();
 }
-const Engine::Resolution Engine::resPool[4] = {
-  { 640,  360 },
-  { 1280, 720 },
-  { 1600, 900 },
-  { 1920, 1080 }
-};
-int Engine::currentResIndex = 1;
 
 
 void Engine::render(double ft) {

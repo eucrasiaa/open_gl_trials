@@ -1,16 +1,9 @@
 #pragma once
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
-#include <glm/vec4.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec2.hpp>
 #include <string>
-struct Vertex {
-    glm::vec3 position;
-    glm::vec4 color;
-    glm::vec2 uv;
-    float texIndex;
-};
+
+#include "RenderItem.hpp"
 struct Pipeline {
   GLuint programID = 0;
 };
@@ -22,61 +15,87 @@ struct PipelineConfig {
 };
 
 
-
-
-
 const size_t MAX_SPRITE_COUNT = 10000;
 const size_t MAX_VERTEX_COUNT = MAX_SPRITE_COUNT * 4;
 
+// SDL_Window* RenderServer::window = nullptr;
+// SDL_GLContext RenderServer::glContext = nullptr;
+//
+// GLuint RenderServer::gVertexArrayObject = 0;
+// GLuint RenderServer::gVertexBufferObject = 0;
+// std::unordered_map<std::string, Pipeline> RenderServer::gPipelinePrograms{};
+// GLuint RenderServer::worldFBO=0;
+// GLuint RenderServer::worldColorTex=0;
+// GLuint RenderServer::worldDepthStencilRBO=0;
+// GLuint RenderServer::postFBO=0;
+// GLuint RenderServer::postColorTex=0;
+//
+//
+// int RenderServer::RSwidth=0;
+// int RenderServer::RSheight=0;
+
+
+
+
 class RenderServer {
-public:
-      // VAO
-    static GLuint gVertexArrayObject;
+  public:
+    // VAO
+    GLuint gVertexArrayObject=0;
     // VBO
-    static GLuint gVertexBufferObject;
+    GLuint gVertexBufferObject=0;
     // pipeline
-    static std::unordered_map<std::string, Pipeline> gPipelinePrograms;
+    std::unordered_map<std::string, Pipeline> gPipelinePrograms{};
 
     // framebuff for world stuff
-    static GLuint worldFBO;
-    static GLuint worldColorTex;
-    static GLuint worldDepthStencilRBO;
+    GLuint worldFBO=0;
+    GLuint worldColorTex=0;
+    GLuint worldDepthStencilRBO=0;
     // framebuff for full screen postProcessing
-    static GLuint postFBO;
-    static GLuint postColorTex;
-    
-    static int RSwidth;
-    static int RSheight;
+    GLuint postFBO=0;
+    GLuint postColorTex=0;
+
+
+    std::vector<Vertex> bufferedItems;
+    int RSwidth=0;
+    int RSheight=0;
 
     static RenderServer& Get() {
-        static RenderServer instance;
-        return instance;
+      static RenderServer instance;
+      return instance;
     }
 
-    static SDL_Window* window;
-    static SDL_GLContext glContext;
-    static bool init(const char* title, int width, int height);
-    
+    SDL_Window* window=nullptr;
+    SDL_GLContext glContext=nullptr;
+    bool init(const char* title, int width, int height);
 
-    static int changeResolution(int width, int height );
 
-    static void render(double dt);
-    static void shutdown();
+    int changeResolution(int width, int height );
 
-private:
-        static GLenum GetShaderTypeFromExtension(const std::string& filePath);
+    void render(double dt);
+    void shutdown();
+
+    std::vector<Vertex> batchBuffer; 
+  private:
+    GLenum GetShaderTypeFromExtension(const std::string& filePath);
 
     // slop
-    RenderServer() = default;
-    static void VertexSpecification();
-    static void FrameBufferInit();
-    static void InitPipelines();
+    void VertexSpecification();
+    void FrameBufferInit();
+    void InitPipelines();
 
     //helper for initPipelines
-    static void CreateGraphicsPipeline(const PipelineConfig& config);
+    void CreateGraphicsPipeline(const PipelineConfig& config);
 
-    static std::string LoadShaderSource(const std::string& filePath);
-    static int BindPipeline(const std::string& name);
-    static GLuint CompileShader(GLuint type, const std::string& source);
+    std::string LoadShaderSource(const std::string& filePath);
+    int BindPipeline(const std::string& name);
+    GLuint CompileShader(GLuint type, const std::string& source);
 
+    RenderServer() = default;
+    ~RenderServer() = default;
+    RenderServer(const RenderServer&) = delete;
+    RenderServer& operator=(const RenderServer&) = delete;
+    
+    GLuint registerItem(RenderItem renderItem);
+   
+    void bakeVertices(RenderItem& item);
 };

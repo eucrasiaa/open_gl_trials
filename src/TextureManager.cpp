@@ -15,7 +15,7 @@ void TextureManager::Release(const std::string& filePath) {
   }
 }
 
-GLuint TextureManager::GetTexture(const std::string& filePath) {   
+GLuint TextureManager::getTexture(const std::string& filePath) {   
   auto it = textureCache.find(filePath); 
   if (it != textureCache.end()) {
     it->second.refCount++; 

@@ -6,24 +6,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-
-
-SDL_Window* RenderServer::window = nullptr;
-SDL_GLContext RenderServer::glContext = nullptr;
-// #include "OldOpenGLHelp.hpp"
-
-GLuint RenderServer::gVertexArrayObject = 0;
-GLuint RenderServer::gVertexBufferObject = 0;
-std::unordered_map<std::string, Pipeline> RenderServer::gPipelinePrograms{};
-GLuint RenderServer::worldFBO=0;
-GLuint RenderServer::worldColorTex=0;
-GLuint RenderServer::worldDepthStencilRBO=0;
-GLuint RenderServer::postFBO=0;
-GLuint RenderServer::postColorTex=0;
-
-
-int RenderServer::RSwidth=0;
-int RenderServer::RSheight=0;
+#include "TextureManager.hpp"
 
 
 int RenderServer::BindPipeline(const std::string& name) {
@@ -46,7 +29,7 @@ void RenderServer::render(double dt){
   //
   // glUseProgram(gPipelinePrograms["Basic"]);
 
-  int pickedPipeline = BindPipeline("Basic");
+  int pickedPipeline = BindPipeline("MVP");
   if(pickedPipeline == -1){
     std::cerr<<"PipelinePickingFailed!! \n";
   }
@@ -156,7 +139,7 @@ bool RenderServer::init(const char* title, int width, int height){
   // glBindBufer
 
 
-
+  TextureManager::Get().init();
   RSwidth = width;
   RSheight = height;
   VertexSpecification();
@@ -311,6 +294,7 @@ void RenderServer::InitPipelines(){
   // }
   std::vector<PipelineConfig> configs = {
     { "Basic", "../assets/shaders/VertexFirst.vert", "../assets/shaders/FragmentFirst.frag" },
+    { "MVP", "../assets/shaders/VertMVP.vert", "../assets/shaders/FragMVP.frag" },
     // { "PostProcess", "assets/shaders/FullscreenQuad.vert", "assets/shaders/PostProcess.frag" },
     // { "ShadowMap", "assets/shaders/Shadow.vert", "assets/shaders/Shadow.frag" }
   };
@@ -416,4 +400,16 @@ GLuint RenderServer::CompileShader(GLuint type, const std::string& source){
   }
   return shaderObject;
 }
+
+    void RenderServer::bakeVertices(RenderItem& item){
+    item.worldVertices.clear(); // A cached vector of the transformed verts
+    
+    for (const auto& localVert : item.localVertices) {
+        Vertex worldVert = localVert;
+        
+        // Transform the local vertex by the node's model matrix ON THE CPU
+        glm::vec4 transformedPos = item.modelMatrix * glm::vec4(localVert.position, 1.0f);
+        worldVert.position = glm::vec3(transformedPos);
+        
+        item.worldVertices.push_back(worldVert);
 
