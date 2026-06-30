@@ -1,6 +1,6 @@
 #pragma once
-#include "SceneElems.hpp"
-class SpriteElement : public RenderElem {
+#include "RenderNode.hpp"
+class SpriteElement : public RenderNode {
 public:
   //open gl here
 

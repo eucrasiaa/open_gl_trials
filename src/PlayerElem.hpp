@@ -1,11 +1,11 @@
 #pragma once
-#include <SDL2/sdl.h>
-#include "SceneElems.hpp"
-class PlayerElem : public RenderElem{
+#include "RenderNode.hpp"
+
+class PlayerElem : public RenderNode{
   public:
-    float speed = 10.0f;
+    float speed = 0.5f;
   void update(double dt){
-    SDL_Log("running update (player): %f",this->position.x);
+    // SDL_Log("running update (player): %f",this->position.x);
       // this->position.x += 1.0;
       this->position += Vec2{-1.0,0.0} * speed * dt; 
       Node::update(dt);

@@ -51,6 +51,7 @@ void RenderServer::render(double dt) {
   glBindVertexArray(gVertexArrayObject);
 
   for (auto& item : activeItems) {
+    // std::cout<<"renderTick on id = " <<item.id<<std::endl;
     if (item.isDirty) {
       bakeVertices(item); 
       item.isDirty = false;
@@ -61,14 +62,19 @@ void RenderServer::render(double dt) {
       currentTexture = item.textureID;
       glActiveTexture(GL_TEXTURE0); 
       glBindTexture(GL_TEXTURE_2D, currentTexture);
-      vertexOffset = 0; 
+      vertexOffset = 0;
+      // std::cout<<"  swapped to textureid = "<<currentTexture<<std::endl;
     }
 
     for (const auto& v : item.worldVertices) {
+      // std::cout<<"  pushedVert = " <<item.worldVertices[0].position.x <<item.worldVertices[0].position.y <<item.worldVertices[0].position.z <<std::endl;
+
       bufferedItems.push_back(v);
     }
 
     for (GLuint index : item.localIndices) {
+            // std::cout<<"  pushedindex = " <<item.localIndices[0] <<std::endl;
+
       bufferedIndices.push_back(index + vertexOffset);
     }
 
@@ -134,8 +140,9 @@ void RenderServer::render(double dt) {
 
 
 void RenderServer::Flush() {
-  if (bufferedItems.empty() || bufferedIndices.empty()) return;
 
+  // std::cout<<"called a flush with count of:" << bufferedItems.size() << " and " << bufferedIndices.size()<<std::endl;
+  if (bufferedItems.empty() || bufferedIndices.empty()) return;
   glBindVertexArray(gVertexArrayObject);
   glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
   glBufferSubData(GL_ARRAY_BUFFER, 0, bufferedItems.size() * sizeof(Vertex), bufferedItems.data());
@@ -580,7 +587,7 @@ RenderItemID RenderServer::RegisterItem(const std::vector<Vertex>& localVerts,
   newItem.isDirty = true;
 
   activeItems.push_back(newItem);
-
+  std::cout<<"registered at id = "<<newItem.id<<std::endl;
   return newItem.id; 
 }
 
