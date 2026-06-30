@@ -1,0 +1,12 @@
+leak:SDL2.dll
+leak:SDL3.dll
+leak:libSDL2
+leak:libSDL3
+
+leak:nvoglv64.dll
+leak:nvcuda
+leak:libEGL_nvidia
+
+leak:libwayland-client
+leak:libgallium
+

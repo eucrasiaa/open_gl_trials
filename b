@@ -18,7 +18,7 @@ if [ "${2,,}" = "raylib" ]; then
     BACKEND_CHOICE="RAYLIB"
 fi
 
-
+# TODO: fix the cd thing is there really any reason to do that LOL 
 
 if [ ! -f CMakeCache.txt ] && [ "$1" != "clean" ]; then
     echo "No existing build configuration found. Initializing Debug (${BACKEND_CHOICE})..."
@@ -37,8 +37,10 @@ case "$1" in
         cmake --build .
         ;;
     a|asan|sanitize)
-        cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON -DBACKEND=${BACKEND_CHOICE}
+        cmake . -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON -DBACKEND=${BACKEND_CHOICE}
         cmake --build .
+        # cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON -DBACKEND=${BACKEND_CHOICE}
+        # cmake --build .
         ;;
     r|run)
         # cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=OFF -DBACKEND=${BACKEND_CHOICE}

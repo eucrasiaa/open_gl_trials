@@ -82,7 +82,7 @@ class RenderServer {
     void shutdown();
 
     std::vector<Vertex> batchBuffer; 
-        std::vector<GLuint> bufferedIndices; 
+    std::vector<GLuint> bufferedIndices; 
 
 
     RenderItemID RegisterItem(const std::vector<Vertex>& localVerts, 

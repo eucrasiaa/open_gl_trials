@@ -36,7 +36,13 @@ set_property(CACHE BACKEND PROPERTY STRINGS "SDL2" "RAYLIB")
 
 # asan valgrind maybe
 option(USE_ASAN "Enable AddressSanitizer (Debug/RelWithDebInfo)" OFF)
-option(USE_VALGRIND "Enable Valgrind target profile" ON)
+if(USE_ASAN)
+    set(USE_VALGRIND OFF CACHE BOOL "" FORCE)
+else()
+    option(USE_VALGRIND "Enable Valgrind target profile" ON)
+endif()
+
+# option(USE_VALGRIND "Enable Valgrind target profile" ON)
 
 if(USE_ASAN AND USE_VALGRIND)
     message(WARNING "Both ASan and Valgrind are enabled. Do not run the 'valgrind' target on an ASan-instrumented binary!")
@@ -169,7 +175,9 @@ if(USE_ASAN)
         target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
         # MSVC link options for ASan are handled automatically via compiler flag
     else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+        target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        # target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)  
+      # target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
         target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fsanitize=undefined)
     endif()
 endif()
@@ -199,6 +207,27 @@ if(USE_VALGRIND)
         add_dependencies(valgrind ${PROJECT_NAME})
     endif()
 endif()
+
+
+# if(USE_ASAN)
+#     # Define where your suppression file lives (adjust if it is named differently)
+#     set(ASAN_SUPP_FILE "${CMAKE_CURRENT_SOURCE_DIR}/asan.supp")
+#
+#     if(EXISTS "${ASAN_SUPP_FILE}")
+#         message(STATUS "Found ASan suppression file: ${ASAN_SUPP_FILE}")
+#     else()
+#         message(WARNING "ASan suppression file not found at ${ASAN_SUPP_FILE}. Leaks will not be filtered.")
+#     endif()
+#
+#     add_custom_target(asan_run
+#         # Use cmake -E env to set the ASAN_OPTIONS env variable cross-platform before launch
+#         COMMAND ${CMAKE_COMMAND} -E env "ASAN_OPTIONS=detect_leaks=1:suppressions=${ASAN_SUPP_FILE}" $<TARGET_FILE:${PROJECT_NAME}>
+#         DEPENDS ${PROJECT_NAME}
+#         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+#         COMMENT "Executing binary with AddressSanitizer monitoring and suppressions"
+#     )
+#     add_dependencies(asan_run ${PROJECT_NAME})
+# endif()
 # dll stuff
 # if(WIN32)
 #     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

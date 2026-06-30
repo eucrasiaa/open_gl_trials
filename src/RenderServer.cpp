@@ -263,6 +263,60 @@ int RenderServer::changeResolution(int width, int height) {
 }
 
 void RenderServer::shutdown(){
+  // first, opengl stuff
+  // unbind all?
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  glUseProgram(0);
+
+  //delete each pipeline
+  for (auto& [name, pipeline] : gPipelinePrograms) {
+    if (pipeline.programID != 0) {
+        glDeleteProgram(pipeline.programID);
+        pipeline.programID = 0;
+    }
+  }
+  gPipelinePrograms.clear();
+  // VAO, VBO, IBO, Framebuffers. ew
+  if (gVertexArrayObject != 0) {
+    glDeleteVertexArrays(1, &gVertexArrayObject);
+    gVertexArrayObject = 0;
+  }
+  if (gVertexBufferObject != 0) {
+      glDeleteBuffers(1, &gVertexBufferObject);
+      gVertexBufferObject = 0;
+  }
+  if (gIndexBufferObject != 0) {
+      glDeleteBuffers(1, &gIndexBufferObject);
+      gIndexBufferObject = 0;
+  }
+
+  if (worldFBO != 0) {
+      glDeleteFramebuffers(1, &worldFBO);
+      worldFBO = 0;
+  }
+  if (worldColorTex != 0) {
+      glDeleteTextures(1, &worldColorTex);
+      worldColorTex = 0;
+  }
+  if (worldDepthStencilRBO != 0) {
+      glDeleteRenderbuffers(1, &worldDepthStencilRBO);
+      worldDepthStencilRBO = 0;
+  }
+
+  if (postFBO != 0) {
+      glDeleteFramebuffers(1, &postFBO);
+      postFBO = 0;
+  }
+  if (postColorTex != 0) {
+      glDeleteTextures(1, &postColorTex);
+      postColorTex = 0;
+  }
+
+
+  // then sdl2 stuff
   if (glContext) SDL_GL_DeleteContext(glContext);
   if (window) SDL_DestroyWindow(window);
   SDL_Quit();
