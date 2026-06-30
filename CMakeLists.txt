@@ -86,6 +86,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 if(BACKEND STREQUAL "SDL2")
     message(STATUS "Configuring project with SDL2 backend")
 
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND MINGW)
+        set(SDL2_DIR "C:/msys64/clang64/lib/cmake/SDL2" CACHE PATH "Force Clang64 SDL2" FORCE)
+    endif()
     # gladslop
 if(NOT TARGET glad::glad)
     # 1. Create a local target using standard alphanumeric naming
@@ -115,8 +119,19 @@ endif()
     
     target_link_libraries(${PROJECT_NAME} PRIVATE glad::glad)
 
+  #clang64 fix?
+    # find_package(SDL2 REQUIRED)
 
-    find_package(SDL2 REQUIRED)
+    find_package(SDL2 REQUIRED CONFIG)
+message(STATUS "=== SDL2 DEBUG ===")
+message(STATUS "SDL2_DIR: ${SDL2_DIR}")
+message(STATUS "SDL2_INCLUDE_DIRS: ${SDL2_INCLUDE_DIRS}")
+if(TARGET SDL2::SDL2)
+    get_target_property(SDL2_INC SDL2::SDL2 INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "SDL2::SDL2 Include: ${SDL2_INC}")
+endif()
+message(STATUS "==================")
+
 
 if(TARGET SDL2::SDL2)
     target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
@@ -208,6 +223,16 @@ if(USE_VALGRIND)
     endif()
 endif()
 
+# clang++ -std=c++23 -g3 -O0 -fno-omit-frame-pointer -fsanitize=address \
+#       -DSDL_MAIN_HANDLED \
+#       -I./include \
+#       -I./glad/include \
+#       -I/clang64/include/SDL2 \
+#       src/*.cpp glad/src/glad.c \
+#       -lSDL2 -lopengl32 \
+#       -o asan_test.exe
+#
+#
 
 # if(USE_ASAN)
 #     # Define where your suppression file lives (adjust if it is named differently)

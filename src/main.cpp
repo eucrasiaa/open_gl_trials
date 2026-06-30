@@ -14,6 +14,9 @@
 
 int main(int argc, char* argv[]) {
     SDL_SetMainReady();
+
+    // volatile int stack_array[5] = {0};
+    // stack_array[6] = 42;
     if (!Engine::Get().init("OpenGL Engine Layout", 1280, 720)) {
         return 1;
     }

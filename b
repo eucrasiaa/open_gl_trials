@@ -37,7 +37,11 @@ case "$1" in
         cmake --build .
         ;;
     a|asan|sanitize)
-        cmake . -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON -DBACKEND=${BACKEND_CHOICE}
+      #rm -rf build/
+      #cmake -B build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON -DBACKEND="SDL2"
+      #cmake --build build
+
+        cmake . -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_PREFIX_PATH=/clang64 -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON -DBACKEND=${BACKEND_CHOICE}
         cmake --build .
         # cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON -DBACKEND=${BACKEND_CHOICE}
         # cmake --build .

@@ -1,7 +1,7 @@
 CompileFlags:
   Add: [
     "-DGL_GLEXT_PROTOTYPES",
-    "-include", "GL/gl.h", # fixes LSP 
+    "-include", "GL/gl.h" # fixes LSP 
     "-xc++",
     "-target", "x86_64-w64-mingw32",
     "-isystem", "C:/msys64/ucrt64/include",
