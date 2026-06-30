@@ -18,7 +18,14 @@ public:
     static void addNode(Node* node);
 
     static std::vector<Node*> sceneNodes;
+
+    static Engine& Get() {
+        static Engine instance;
+        return instance;
+    }
+
 private:
+    Engine() = default;
     static void handleEvents();
     static void update(double dt);
     static void render(double dt);

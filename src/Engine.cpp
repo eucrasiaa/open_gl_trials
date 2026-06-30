@@ -9,8 +9,9 @@ double Engine::timeScale = 1.0;
 std::vector<Node*> Engine::sceneNodes;
 
 bool Engine::init(const char* title, int width, int height) {
-  renderServer = new RenderServer();
-  if(!renderServer->init(title, width, height)){
+  Engine::renderServer = &RenderServer::Get();
+  if(!RenderServer::init(title, width, height)){
+  // if(!renderServer->init(title, width, height)){
     std::cerr<<"render server failed to initialize!\n";
     return false;
   }
@@ -114,3 +115,11 @@ const Engine::Resolution Engine::resPool[4] = {
 };
 int Engine::currentResIndex = 1;
 
+
+void Engine::render(double ft) {
+  for (auto* node : sceneNodes) {
+    if (node != nullptr) {
+      node->render(); // each node will share their rendering 
+    }
+  } 
+}

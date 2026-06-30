@@ -8,13 +8,6 @@
 #include "SpriteElement.hpp"
 
 
-void Engine::render(double ft) {
-  for (auto* node : sceneNodes) {
-    if (node != nullptr) {
-      node->render(); // each node will share their rendering 
-    }
-  } 
-}
 
 int main(int argc, char* argv[]) {
     // Starts at index 1 (1280x720) out of our resolution pool
