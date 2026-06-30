@@ -52,7 +52,7 @@ class Engine {
 
 
     Engine() = default;
-    ~Engine() = default;
+    ~Engine() { shutdown(); }
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 };

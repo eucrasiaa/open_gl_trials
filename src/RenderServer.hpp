@@ -112,7 +112,7 @@ class RenderServer {
     GLuint CompileShader(GLuint type, const std::string& source);
 
     RenderServer() = default;
-    ~RenderServer() = default;
+    ~RenderServer() { shutdown(); }
     RenderServer(const RenderServer&) = delete;
     RenderServer& operator=(const RenderServer&) = delete;
     
