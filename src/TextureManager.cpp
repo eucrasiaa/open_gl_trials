@@ -25,6 +25,7 @@ GLuint TextureManager::getTexture(const std::string& filePath) {
     int localWidth = 0;
     int localHeight = 0;
     int localChannels = 0;
+    stbi_set_flip_vertically_on_load(true);
     unsigned char* imageData = stbi_load(filePath.c_str(), &localWidth, &localHeight, &localChannels, 0);
     //safety!! 
     if (!imageData) {
@@ -44,11 +45,12 @@ GLuint TextureManager::getTexture(const std::string& filePath) {
     //??
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, localWidth, localHeight, 0, dataFormat, GL_UNSIGNED_BYTE, imageData);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    // glGenerateMipmap(GL_TEXTURE_2D);
     //configs?
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 
@@ -60,7 +62,7 @@ GLuint TextureManager::getTexture(const std::string& filePath) {
     newResource.width = localWidth;
     newResource.height = localHeight;
     newResource.channels = localChannels;
-
+    std::cout<<"loaded texture: "<<texture<<" "<<localWidth<<" "<<localHeight<<" "<<localChannels<<std::endl;
     textureCache[filePath] = newResource;
 
     return texture;

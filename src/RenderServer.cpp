@@ -1,6 +1,7 @@
 #include "RenderServer.hpp"
 #include "RenderItem.hpp"
 #include "glad/glad.h"
+#include <SDL_stdinc.h>
 #include <iostream>
 
 #include <fstream>
@@ -21,60 +22,131 @@ int RenderServer::BindPipeline(const std::string& name) {
   }
 }
 
-void RenderServer::render(double dt){
-  // glDisable(GL_DEPTH_TEST);
-  // glDisable(GL_CULL_FACE);
-  //
-  // glUniformMatrix4fv(locView, 1, GL_FALSE, glm::value_ptr(cameraViewMatrix));
-  // glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(cameraProjMatrix));
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  //
-  // glUseProgram(gPipelinePrograms["Basic"]);
 
-  int pickedPipeline = BindPipeline("MVP");
-  if(pickedPipeline == -1){
-    std::cerr<<"PipelinePickingFailed!! \n";
-  }
-  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+void RenderServer::render(double dt) {
+  glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+  glDisable(GL_DEPTH_TEST); 
+  glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  int pickedPipeline = BindPipeline("MVP"); 
+  if (pickedPipeline == -1) return;
+
+  glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 0.0f, 720.0f, -1.0f, 1.0f);
+  GLint locProj = glGetUniformLocation(pickedPipeline, "u_Projection");
+  glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
 
 
-  std::vector<Vertex> testVertices = {
-    { {-0.6f, -0.5f, 0.0f}, {1.0f, 0.4f, 0.0f, 1.0f}, {0.0f, 0.0f}, 0.0f },
-    { { 0.0f,  0.6f, 0.0f}, {1.0f, 0.4f, 0.0f, 1.0f}, {0.5f, 1.0f}, 0.0f }, 
-    { { 0.6f, -0.5f, 0.0f}, {1.0f, 0.4f, 0.0f, 1.0f}, {1.0f, 0.0f}, 0.0f },
+  GLint locTex = glGetUniformLocation(pickedPipeline, "u_Texture");
+  glUniform1i(locTex, 0);
 
-    { {-0.2f, -0.3f, 0.0f}, {0.0f, 0.8f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0.0f }, 
-    { { 0.4f,  0.8f, 0.0f}, {0.0f, 0.8f, 1.0f, 1.0f}, {0.5f, 1.0f}, 0.0f }, 
-    { { 1.0f, -0.3f, 0.0f}, {0.0f, 0.8f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0.0f }
-  };
 
-  GLint locToPass = glGetUniformLocation(static_cast<GLuint>(pickedPipeline), "u_Time");
-  glUniform1f(locToPass, static_cast<float>(dt));
+
+  GLuint currentTexture = 0;
+  GLuint vertexOffset = 0;
+
+  bufferedItems.clear();
+  bufferedIndices.clear();
+
   glBindVertexArray(gVertexArrayObject);
 
-  glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
-  glBufferSubData(
-      GL_ARRAY_BUFFER, 
-      0, 
-      testVertices.size() * sizeof(Vertex), 
-      testVertices.data()
-      );
-  // glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
+  for (auto& item : activeItems) {
+    if (item.isDirty) {
+      bakeVertices(item); 
+      item.isDirty = false;
+    }
 
-  // glDrawArrays(GL_TRIANGLES, 0, 3);  
+    if (item.textureID != currentTexture) {
+      Flush(); 
+      currentTexture = item.textureID;
+      glActiveTexture(GL_TEXTURE0); 
+      glBindTexture(GL_TEXTURE_2D, currentTexture);
+      vertexOffset = 0; 
+    }
 
-  glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(testVertices.size()));
+    for (const auto& v : item.worldVertices) {
+      bufferedItems.push_back(v);
+    }
 
+    for (GLuint index : item.localIndices) {
+      bufferedIndices.push_back(index + vertexOffset);
+    }
+
+    vertexOffset += item.worldVertices.size();
+  }
+
+  Flush();
 
   SDL_GL_SwapWindow(window);
-
   glBindVertexArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
+// void RenderServer::render(double dt){
+//
+//   // glDisable(GL_DEPTH_TEST);
+//   // glDisable(GL_CULL_FACE);
+//   glEnable(GL_DEPTH_TEST);
+//   glDepthFunc(GL_LESS);
+//   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+//   //
+//   // glUseProgram(gPipelinePrograms["Basic"]);
+//
+//   int pickedPipeline = BindPipeline("MVP");
+//   if(pickedPipeline == -1){
+//     std::cerr<<"PipelinePickingFailed!! \n";
+//   }
+//   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+//
+//
+//   std::vector<Vertex> testVertices = {
+//     { {-0.6f, -0.5f, 0.0f}, {1.0f, 0.4f, 0.0f, 1.0f}, {0.0f, 0.0f}, 0.0f },
+//     { { 0.0f,  0.6f, 0.0f}, {1.0f, 0.4f, 0.0f, 1.0f}, {0.5f, 1.0f}, 0.0f }, 
+//     { { 0.6f, -0.5f, 0.0f}, {1.0f, 0.4f, 0.0f, 1.0f}, {1.0f, 0.0f}, 0.0f },
+//
+//     { {-0.2f, -0.3f, 0.0f}, {0.0f, 0.8f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0.0f }, 
+//     { { 0.4f,  0.8f, 0.0f}, {0.0f, 0.8f, 1.0f, 1.0f}, {0.5f, 1.0f}, 0.0f }, 
+//     { { 1.0f, -0.3f, 0.0f}, {0.0f, 0.8f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0.0f }
+//   };
+//
+//   GLint locToPass = glGetUniformLocation(static_cast<GLuint>(pickedPipeline), "u_Time");
+//   glUniform1f(locToPass, static_cast<float>(dt));
+//   glBindVertexArray(gVertexArrayObject);
+//
+//   glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
+//   glBufferSubData(
+//       GL_ARRAY_BUFFER, 
+//       0, 
+//       testVertices.size() * sizeof(Vertex), 
+//       testVertices.data()
+//       );
+//   // glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
+//
+//   // glDrawArrays(GL_TRIANGLES, 0, 3);  
+//
+//   glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(testVertices.size()));
+//
+//
+//   SDL_GL_SwapWindow(window);
+//
+//   glBindVertexArray(0);
+//   glBindBuffer(GL_ARRAY_BUFFER, 0);
+// }
 
 
+
+void RenderServer::Flush() {
+  if (bufferedItems.empty() || bufferedIndices.empty()) return;
+
+  glBindVertexArray(gVertexArrayObject);
+  glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, bufferedItems.size() * sizeof(Vertex), bufferedItems.data());
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIndexBufferObject);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, bufferedIndices.size() * sizeof(GLuint), bufferedIndices.data());
+
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(bufferedIndices.size()), GL_UNSIGNED_INT, nullptr);
+
+  bufferedItems.clear();
+  bufferedIndices.clear();
+}
 
 
 bool RenderServer::init(const char* title, int width, int height){
@@ -142,6 +214,8 @@ bool RenderServer::init(const char* title, int width, int height){
   // glBindBuffer()
   // glBindBufer
 
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   TextureManager::Get().init();
   RSwidth = width;
@@ -206,6 +280,7 @@ void RenderServer::VertexSpecification(){
   // notible: marked as dynamic (will be written to often?, preealloc'd big size;
   glBufferData(GL_ARRAY_BUFFER, MAX_VERTEX_COUNT * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
 
+
   // vertex struct is now
   // {x,y,z}, {r,g,b,a}, {u,v},{texture slot id}
   glEnableVertexAttribArray(0);
@@ -220,9 +295,17 @@ void RenderServer::VertexSpecification(){
   glEnableVertexAttribArray(3);
   glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
 
+
+  // IBO 
+  glGenBuffers(1, &gIndexBufferObject);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIndexBufferObject);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_SPRITE_COUNT * 6 * sizeof(GLuint), nullptr, GL_DYNAMIC_DRAW);
+
+
   //unbindbind?
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 }
 
@@ -405,6 +488,9 @@ GLuint RenderServer::CompileShader(GLuint type, const std::string& source){
   return shaderObject;
 }
 
+
+
+
 void RenderServer::bakeVertices(RenderItem& item){
   item.worldVertices.clear(); 
 
@@ -421,35 +507,35 @@ void RenderServer::bakeVertices(RenderItem& item){
 // RenderServer.cpp
 
 RenderItemID RenderServer::RegisterItem(const std::vector<Vertex>& localVerts, 
-                                        const std::vector<GLuint>& localIndices, 
-                                        GLuint textureID, 
-                                        const std::string& pipelineName, 
-                                        RenderItemLayer layer) 
+    const std::vector<GLuint>& localIndices, 
+    GLuint textureID, 
+    const std::string& pipelineName, 
+    RenderItemLayer layer) 
 {
-    RenderItem newItem;
-    newItem.id = NextID++;
-    newItem.localVertices = localVerts;
-    newItem.localIndices = localIndices;
-    
-    newItem.worldVertices.resize(localVerts.size()); 
-    
-    newItem.textureID = textureID;
-    newItem.pipelineName = pipelineName;
-    newItem.layer = layer;
-    newItem.modelMatrix = glm::mat4(1.0f);
-    newItem.isDirty = true;
+  RenderItem newItem;
+  newItem.id = NextID++;
+  newItem.localVertices = localVerts;
+  newItem.localIndices = localIndices;
 
-    activeItems.push_back(newItem);
-    
-    return newItem.id; 
+  newItem.worldVertices.resize(localVerts.size()); 
+
+  newItem.textureID = textureID;
+  newItem.pipelineName = pipelineName;
+  newItem.layer = layer;
+  newItem.modelMatrix = glm::mat4(1.0f);
+  newItem.isDirty = true;
+
+  activeItems.push_back(newItem);
+
+  return newItem.id; 
 }
 
 void RenderServer::UpdateTransform(RenderItemID id, const glm::mat4& newMatrix) {
-    for (auto& item : activeItems) {
-        if (item.id == id) {
-            item.modelMatrix = newMatrix;
-            item.isDirty = true;
-            break;
-        }
+  for (auto& item : activeItems) {
+    if (item.id == id) {
+      item.modelMatrix = newMatrix;
+      item.isDirty = true;
+      break;
     }
+  }
 }  

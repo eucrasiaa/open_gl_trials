@@ -1,3 +1,4 @@
+#include "PlayerElem.hpp"
 #include "RenderItem.hpp"
 #include "SceneElems.hpp"
 #define SDL_MAIN_HANDLED
@@ -12,31 +13,25 @@
 
 
 int main(int argc, char* argv[]) {
-      SDL_SetMainReady();
-    // Starts at index 1 (1280x720) out of our resolution pool
+    SDL_SetMainReady();
     if (!Engine::Get().init("OpenGL Engine Layout", 1280, 720)) {
         return 1;
     }
-    Node* background = new Node();
-    background->position = Vec2::ZERO;
-    background->scale = Vec2(1280.0f, 720.0f);
-    RenderElem *bkgd = new RenderElem();
-    bkgd->init("../assets/textures/pleasentgradient.png",RenderItemLayer::OPAQUE);
-    background->children.push_back(bkgd);
-    
-    Engine::Get().addNode(background);
-    Node* player = new Node();
-    player->position = Vec2(100.0f, 200.0f);
-    player->scale = Vec2(32.0f, 62.0f);
-    bkgd = new RenderElem();
-    bkgd->init("../assets/textures/player.png",RenderItemLayer::OPAQUE);
-    player->children.push_back(bkgd);
 
+    RenderElem* background = new RenderElem();
+    background->init("../assets/textures/pleasentgradient.png", RenderItemLayer::OPAQUE);
+    background->position = Vec2(640.0f, 360.0f); 
+    background->scale = Vec2(1280.0f, 720.0f);
+    Engine::Get().addNode(background);
+
+
+    PlayerElem* player = new PlayerElem();
+    player->init("../assets/textures/player.png", RenderItemLayer::OPAQUE);
+    player->position = Vec2(1280.0/2.0, 720.0/2.0);
+    player->scale = Vec2(100.0f, 100.0f);
     Engine::Get().addNode(player);
-  
 
     Engine::Get().run();
     Engine::Get().shutdown();
-
     return 0;
 }

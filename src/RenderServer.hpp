@@ -35,6 +35,11 @@ const size_t MAX_VERTEX_COUNT = MAX_SPRITE_COUNT * 4;
 // int RenderServer::RSheight=0;
 
 
+// tmp
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+// Projection: Map world coordinates directly to screen pixels (0,0 is bottom-left or top-left)
 
 
 class RenderServer {
@@ -43,6 +48,8 @@ class RenderServer {
     GLuint gVertexArrayObject=0;
     // VBO
     GLuint gVertexBufferObject=0;
+    // IBO
+    GLuint gIndexBufferObject = 0;  
     // pipeline
     std::unordered_map<std::string, Pipeline> gPipelinePrograms{};
 
@@ -75,6 +82,8 @@ class RenderServer {
     void shutdown();
 
     std::vector<Vertex> batchBuffer; 
+        std::vector<GLuint> bufferedIndices; 
+
 
     RenderItemID RegisterItem(const std::vector<Vertex>& localVerts, 
                               const std::vector<GLuint>& localIndices, 
@@ -109,4 +118,6 @@ class RenderServer {
     
    
     void bakeVertices(RenderItem& item);
+
+    void Flush();
 };

@@ -49,6 +49,7 @@ void Engine::changeResolution(int direction) {
 
 void Engine::update(double dt) {
   for (auto *node : sceneNodes){
+
     node->update(dt);
   }
   // if (sceneNodes.size() > 1) {
@@ -108,7 +109,7 @@ void Engine::shutdown() {
 void Engine::render(double ft) {
   for (auto* node : sceneNodes) {
     if (node != nullptr) {
-      node->render(); // each node will share their rendering 
+      node->render(glm::mat4(1.0f)); // each node will share their rendering 
     }
   } 
 }

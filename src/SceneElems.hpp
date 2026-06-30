@@ -1,5 +1,6 @@
 #pragma once
 #include "./wtypes/Vec2.hpp"
+#include <iostream>
 #include <vector>
 #include "RenderItem.hpp"
 #include "TextureManager.hpp"
@@ -14,22 +15,31 @@ class Node {
 
     std::vector<Node*> children;
 
-    ~Node() {
+    virtual ~Node() { 
       for (auto* elem : children) {
         delete elem;
       }
     }
 
-    void update(double dt){
+    virtual void update(double dt){
       for (auto *elem : children){
         elem->update(dt);
       }
     }
-    void render(){
-      for (auto *elem : children){
-        elem->render();
-      }
+
+    virtual void render(const glm::mat4& parentTransform = glm::mat4(1.0f)) {
+        glm::mat4 globalTransform = parentTransform * calculateTransform();
+        
+        for (auto *elem : children) {
+            elem->render(globalTransform);
+        }
     }
+   // virtual void render(const glm::mat4& parentTransform = glm::mat4(1.0f)) {
+   //    glm::mat4 globalTransform = parentTransform * calculateTransform();
+   //    for (auto *elem : children) {
+   //      elem->render(globalTransform);
+   //    }
+   //  }
 
     glm::mat4 calculateTransform() {
       //ident matrix
@@ -70,4 +80,23 @@ class RenderElem : public Node {
 
       this->renderID = RenderServer::Get().RegisterItem(localQuad, indices, texID, "Basic", renderLayer);
     }
+
+    void render(const glm::mat4& parentTransform = glm::mat4(1.0f)) override {
+
+        glm::mat4 globalTransform = parentTransform * calculateTransform();
+
+        RenderServer::Get().UpdateTransform(this->renderID, globalTransform);
+
+        for (auto *elem : children) {
+            elem->render(globalTransform);
+        }
+    }
+  //   void update(double dt) override{
+  //   SDL_Log("running update (renderElem): %f",this->position.x);
+  //     // this->position.x += 1.0;
+  //     // this->position += Vec2{1.0,0.0} * 0.5f * dt; 
+  //     Node::update(dt);
+  //
+  // }
+
 };
