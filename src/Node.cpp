@@ -18,13 +18,36 @@ void Node::update(double dt) {
   }
 }
 
-void Node::render(const glm::mat4 &parentTransform = glm::mat4(1.0f)) {
-  glm::mat4 globalTransform = parentTransform * calculateTransform();
 
-  for (auto *elem : children) {
-    elem->render(globalTransform);
+void Node::computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty) {
+  bool needsRecalc = isDirty || parentIsDirty;
+
+  if (needsRecalc) {
+    //trs
+    localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.0f));
+    localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+    localTransform = glm::scale(localTransform, glm::vec3(scale.x, scale.y, 1.0f));
+
+    //global
+    globalTransform = parentGlobal * localTransform;
+    //fixflag
+    isDirty = false;
+  }
+
+  //tick down!
+  for (auto* child : children) {
+    child->computeTransforms(globalTransform, needsRecalc);
   }
 }
+
+
+// void Node::render(const glm::mat4 &parentTransform = glm::mat4(1.0f)) {
+//   glm::mat4 globalTransform = parentTransform * calculateTransform();
+//
+//   for (auto *elem : children) {
+//     elem->render(globalTransform);
+//   }
+// }
 
 void Node::addChild(Node *node) {
   if (node != nullptr) {
@@ -32,18 +55,18 @@ void Node::addChild(Node *node) {
   }
 }
 
-glm::mat4 Node::calculateTransform() {
-  // ident matrix
-  glm::mat4 transform = glm::mat4(1.0f);
-  // loc
-  transform =
-    glm::translate(transform, glm::vec3(position.x, position.y, 0.0f));
-  // rot
-  transform = glm::rotate(transform, glm::radians(rotation),
-      glm::vec3(0.0f, 0.0f, 1.0f));
-  // scale
-  transform = glm::scale(transform, glm::vec3(scale.x, scale.y, 1.0f));
-
-  return transform;
-}
+// void Node::computeTransforms() {
+//   // ident matrix
+//   glm::mat4 transform = glm::mat4(1.0f);
+//   // loc
+//   transform =
+//     glm::translate(transform, glm::vec3(position.x, position.y, 0.0f));
+//   // rot
+//   transform = glm::rotate(transform, glm::radians(rotation),
+//       glm::vec3(0.0f, 0.0f, 1.0f));
+//   // scale
+//   transform = glm::scale(transform, glm::vec3(scale.x, scale.y, 1.0f));
+//
+//   return transform;
+// }
 

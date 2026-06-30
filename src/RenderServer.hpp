@@ -1,6 +1,7 @@
 #pragma once
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
+#include <iostream>
 #include <string>
 
 #include "RenderItem.hpp"
@@ -43,7 +44,21 @@ const size_t MAX_VERTEX_COUNT = MAX_SPRITE_COUNT * 4;
 
 
 class RenderServer {
-  public:
+
+  private:
+    // |||||  SDL2 Items  |||||
+    // ||||||||||||||||||||||||
+    int RSwidth=0;
+    int RSheight=0;
+
+    SDL_Window* window=nullptr;
+    SDL_GLContext glContext=nullptr;
+
+
+
+
+    // ||||| OpenGL Items |||||
+    // |||||||||||||||||||||||| 
     // VAO
     GLuint gVertexArrayObject=0;
     // VBO
@@ -61,63 +76,79 @@ class RenderServer {
     GLuint postFBO=0;
     GLuint postColorTex=0;
 
+    // ||||| instange management |||||
+    // ||||||||||||||||||||||||||||||| 
 
-    std::vector<Vertex> bufferedItems;
-    int RSwidth=0;
-    int RSheight=0;
+    // buckets rework
+    std::vector<RenderInstance> opaqueQueue;
+    std::vector<RenderInstance> transparentQueue;
+    std::vector<RenderInstance> uiQueue;
+    std::unordered_map<RenderItemID, RenderInstance*> instanceDirectory;
+    RenderItemID NextID = 0;    
+
+
+    // ||||| Function!!! ||||
+    // |||||||||||||||||||||
+    //  TODO: sort this LOL
+
+    GLenum GetShaderTypeFromExtension(const std::string& filePath);
+
+    // init 
+    void VertexSpecification();
+    void FrameBufferInit();
+    void InitPipelines();
+    // init helpers
+    //helper for initPipelines
+    void CreateGraphicsPipeline(const PipelineConfig& config);
+    std::string LoadShaderSource(const std::string& filePath);
+    int BindPipeline(const std::string& name);
+    GLuint CompileShader(GLuint type, const std::string& source);
+
+
+    
+    // render stuff! mostly helpers
+    void DrawFullScreenQuad();
+
+
+
+    // class oop stuff
+    RenderServer() = default;
+    ~RenderServer() { shutdown(); }
+    RenderServer(const RenderServer&) = delete;
+    RenderServer& operator=(const RenderServer&) = delete;
+
+
+  public:
 
     static RenderServer& Get() {
       static RenderServer instance;
       return instance;
     }
 
-    SDL_Window* window=nullptr;
-    SDL_GLContext glContext=nullptr;
+
+
     bool init(const char* title, int width, int height);
-
-
     int changeResolution(int width, int height );
-
     void render(double dt);
     void shutdown();
 
-    std::vector<Vertex> batchBuffer; 
-    std::vector<GLuint> bufferedIndices; 
 
 
-    RenderItemID RegisterItem(const std::vector<Vertex>& localVerts, 
-                              const std::vector<GLuint>& localIndices, 
-                              GLuint textureID, 
-                              const std::string& pipelineName, 
-                              RenderItemLayer layer);
-    void UpdateTransform(RenderItemID id, const glm::mat4& newMatrix);
-    void UnregisterItem(RenderItemID id);
+    // regestering
+    void SubmitInstance(const RenderInstance& instance);
+    void ClearQueues();
 
-  private:
 
-    std::vector<RenderItem> activeItems;
-    RenderItemID NextID = 0;
-    GLenum GetShaderTypeFromExtension(const std::string& filePath);
+    // std::vector<Vertex> batchBuffer; 
+    // std::vector<GLuint> bufferedIndices; 
 
-    // slop
-    void VertexSpecification();
-    void FrameBufferInit();
-    void InitPipelines();
 
-    //helper for initPipelines
-    void CreateGraphicsPipeline(const PipelineConfig& config);
+    // RenderItemID RegisterItem(const std::vector<Vertex>& localVerts, 
+    //                           const std::vector<GLuint>& localIndices, 
+    //                           GLuint textureID, 
+    //                           const std::string& pipelineName, 
+    //                           RenderItemLayer layer);
+    // void UpdateTransform(RenderItemID id, const glm::mat4& newMatrix);
+    // void UnregisterItem(RenderItemID id);
 
-    std::string LoadShaderSource(const std::string& filePath);
-    int BindPipeline(const std::string& name);
-    GLuint CompileShader(GLuint type, const std::string& source);
-
-    RenderServer() = default;
-    ~RenderServer() { shutdown(); }
-    RenderServer(const RenderServer&) = delete;
-    RenderServer& operator=(const RenderServer&) = delete;
-    
-   
-    void bakeVertices(RenderItem& item);
-
-    void Flush();
 };

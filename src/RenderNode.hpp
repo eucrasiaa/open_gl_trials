@@ -39,17 +39,23 @@ public:
     SDL_Log("init on render!");
     std::cout<<typeid(this).name() << std::endl;
   }
-
-  void render(const glm::mat4 &parentTransform = glm::mat4(1.0f)) override {
-
-    glm::mat4 globalTransform = parentTransform * calculateTransform();
-
-    RenderServer::Get().UpdateTransform(this->renderID, globalTransform);
-
-    for (auto *elem : children) {
-      elem->render(globalTransform);
-    }
+  
+  virtual void computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty) override{
+      Node::computeTransforms(parentGlobal,parentIsDirty);
+      if(parentIsDirty||isDirty){
+        RenderServer::Get().UpdateTransform(this->renderID, globalTransform);
+      }
   }
+  // void render(const glm::mat4 &parentTransform = glm::mat4(1.0f)) override {
+  //
+  //   glm::mat4 globalTransform = parentTransform * calculateTransform();
+  //
+  //   RenderServer::Get().UpdateTransform(this->renderID, globalTransform);
+  //
+  //   for (auto *elem : children) {
+  //     elem->render(globalTransform);
+  //   }
+  // }
   //   void update(double dt) override{
   //   SDL_Log("running update (renderElem): %f",this->position.x);
   //     // this->position.x += 1.0;

@@ -24,68 +24,178 @@ int RenderServer::BindPipeline(const std::string& name) {
 
 
 void RenderServer::render(double dt) {
-  glBindFramebuffer(GL_FRAMEBUFFER, 0); 
-  glDisable(GL_DEPTH_TEST); 
+
+  // sort bucket by texture 
+  std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
+        return a.textureID < b.textureID;
+    });
+
+  // 2. sort transparent by camera dist? see notes
+  // TODO: this
+
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // |-|-|-|             Opaque Layer Pass               |-|-|-|
+  // |-|-|-|   Needs: WFB, Depth Test, Depth Mask Write  |-|-|-|
+  // |-|-|-|  Toggle: WFB, Depth Test, Depth Mask Write  |-|-|-|
+  // |-|-|-|            Doesnt Use: Blend                |-|-|-|
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+
+  glBindFramebuffer(GL_FRAMEBUFFER, worldFBO);
+  glEnable(GL_DEPTH_TEST); // test
+  glDepthMask(GL_TRUE); // mask
+  glDisable(GL_BLEND); // blend
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
-  glClear(GL_COLOR_BUFFER_BIT);
+
 
   int pickedPipeline = BindPipeline("MVP"); 
   if (pickedPipeline == -1) return;
-
-  glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 0.0f, 720.0f, -1.0f, 1.0f);
-  GLint locProj = glGetUniformLocation(pickedPipeline, "u_Projection");
-  glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
+  RenderQueue(opaqueQueue);
 
 
-  GLint locTex = glGetUniformLocation(pickedPipeline, "u_Texture");
-  glUniform1i(locTex, 0);
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // |-|-|-|          Transparent Layer Pass             |-|-|-|
+  // |-|-|-|     Needs: WFB, Depth Test, Blend           |-|-|-|
+  // |-|-|-|    Toggle: Mask Write Off, Blend On         |-|-|-|
+  // |-|-|-|            Doesnt Use:                      |-|-|-|
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // uses: worldFramebuffer, Blend, Depth Test 
+  // doesnt: No Depth Mask Write 
+  
+  
+  // frame buffer + depth test still bound.
+  glDepthMask(GL_FALSE); // mask
+  glEnable(GL_BLEND); // blend
+  pickedPipeline = BindPipeline("MVP"); 
+  if (pickedPipeline == -1) return;
+  RenderQueue(transparentQueue); 
 
 
+  
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // |-|-|-|          Post-Process World Pass             |-|-|-|
+  // |-|-|-|    Needs: postFBO, World Color Texture       |-|-|-|
+  // |-|-|-|  Toggle: FBO BOundDepth Test Off, Blend Off  |-|-|-|
+  // |-|-|-|       Doesnt Use: Depth Mask Write           |-|-|-|
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  glBindFramebuffer(GL_FRAMEBUFFER, postFBO);
+  glClear(GL_COLOR_BUFFER_BIT); // only needs color 
+  glDisable(GL_DEPTH_TEST); 
+  // glDepthMask(GL_FALSE); // shouldnt need reset but 
+  glDisable(GL_BLEND);
+  
+  pickedPipeline = BindPipeline("WorldPostProcess");
+  if (pickedPipeline == -1) return;
 
-  GLuint currentTexture = 0;
-  GLuint vertexOffset = 0;
-
-  bufferedItems.clear();
-  bufferedIndices.clear();
-
-  glBindVertexArray(gVertexArrayObject);
-
-  for (auto& item : activeItems) {
-    // std::cout<<"renderTick on id = " <<item.id<<std::endl;
-    if (item.isDirty) {
-      bakeVertices(item); 
-      item.isDirty = false;
-    }
-
-    if (item.textureID != currentTexture) {
-      Flush(); 
-      currentTexture = item.textureID;
-      glActiveTexture(GL_TEXTURE0); 
-      glBindTexture(GL_TEXTURE_2D, currentTexture);
-      vertexOffset = 0;
-      // std::cout<<"  swapped to textureid = "<<currentTexture<<std::endl;
-    }
-
-    for (const auto& v : item.worldVertices) {
-      // std::cout<<"  pushedVert = " <<item.worldVertices[0].position.x <<item.worldVertices[0].position.y <<item.worldVertices[0].position.z <<std::endl;
-
-      bufferedItems.push_back(v);
-    }
-
-    for (GLuint index : item.localIndices) {
-            // std::cout<<"  pushedindex = " <<item.localIndices[0] <<std::endl;
-
-      bufferedIndices.push_back(index + vertexOffset);
-    }
-
-    vertexOffset += item.worldVertices.size();
+  float minX = 0.4f;
+  float minY = 0.4f;
+  float maxX = 0.6f;
+  float maxY = 0.6f;
+  GLint boundsLoc = glGetUniformLocation(pickedPipeline, "u_InversionBounds");
+  if (boundsLoc != -1) {
+      glUniform4f(boundsLoc, minX, minY, maxX, maxY);
   }
 
-  Flush();
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D,worldColorTex); // bind texture from worldFBO
 
+  DrawFullScreenQuad();
+
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // |-|-|-|               UI Overlay Pass               |-|-|-|
+  // |-|-|-|        Needs: postFBO, Blend                |-|-|-|
+  // |-|-|-|       Toggle: Depth Test Off, Blend On      |-|-|-|
+  // |-|-|-|              Doesnt Use: Depth Mask Write  |-|-|-|
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // keep the postFBO bound cause we just write over it  
+  
+  // glDisable(GL_DEPTH_TEST); // UI ignores depth  no need to reset
+  glEnable(GL_BLEND); // it does need transparency. probably?
+
+  pickedPipeline = BindPipeline("MVP");
+  if (pickedPipeline == -1) return;
+  RenderQueue(uiQueue);
+
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // |-|-|-|          Post-Process Screen Pass           |-|-|-|
+  // |-|-|-|   Needs: Screen (0), PostFBO Color Texture  |-|-|-|
+  // |-|-|-|  Toggle: Screen FBO, Depth Off, Blend Off   |-|-|-|
+  // |-|-|-|            Doesnt Use:                      |-|-|-|
+  // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+  // remember the ping->pong system
+  // load screen out as buffer we write to, pass it what we've drawn so far as a value 
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0); // bind directly to screen
+  glClear(GL_COLOR_BUFFER_BIT); // doesnt need to clear depth
+  // glDisable(GL_DEPTH_TEST);  // should have stayed off so
+  glDisable(GL_BLEND);
+
+  pickedPipeline = BindPipeline("ScreenPostProcess");
+  if (pickedPipeline == -1) return;
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, postColorTex); // Texture from postProcessFBO
+  DrawFullScreenQuad();
+
+  
   SDL_GL_SwapWindow(window);
-  glBindVertexArray(0);
-}
+  ClearQueues();
+
+} 
+  
+
+  // glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 0.0f, 720.0f, -1.0f, 1.0f);
+  // GLint locProj = glGetUniformLocation(pickedPipeline, "u_Projection");
+  // glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
+  //
+  //
+  // GLint locTex = glGetUniformLocation(pickedPipeline, "u_Texture");
+  // glUniform1i(locTex, 0);
+  //
+  //
+  //
+  // GLuint currentTexture = 0;
+  // GLuint vertexOffset = 0;
+  //
+  // bufferedItems.clear();
+  // bufferedIndices.clear();
+  //
+  // glBindVertexArray(gVertexArrayObject);
+  //
+  // for (auto& item : activeItems) {
+  //   // std::cout<<"renderTick on id = " <<item.id<<std::endl;
+  //   if (item.isDirty) {
+  //     bakeVertices(item); 
+  //     item.isDirty = false;
+  //   }
+  //
+  //   if (item.textureID != currentTexture) {
+  //     Flush(); 
+  //     currentTexture = item.textureID;
+  //     glActiveTexture(GL_TEXTURE0); 
+  //     glBindTexture(GL_TEXTURE_2D, currentTexture);
+  //     vertexOffset = 0;
+  //     // std::cout<<"  swapped to textureid = "<<currentTexture<<std::endl;
+  //   }
+  //
+  //   for (const auto& v : item.worldVertices) {
+  //     // std::cout<<"  pushedVert = " <<item.worldVertices[0].position.x <<item.worldVertices[0].position.y <<item.worldVertices[0].position.z <<std::endl;
+  //
+  //     bufferedItems.push_back(v);
+  //   }
+  //
+  //   for (GLuint index : item.localIndices) {
+  //           // std::cout<<"  pushedindex = " <<item.localIndices[0] <<std::endl;
+  //
+  //     bufferedIndices.push_back(index + vertexOffset);
+  //   }
+  //
+  //   vertexOffset += item.worldVertices.size();
+  // }
+  //
+  // Flush();
+
+
 // void RenderServer::render(double dt){
 //
 //   // glDisable(GL_DEPTH_TEST);
@@ -443,6 +553,8 @@ void RenderServer::InitPipelines(){
   std::vector<PipelineConfig> configs = {
     { "Basic", "../assets/shaders/VertexFirst.vert", "../assets/shaders/FragmentFirst.frag" },
     { "MVP", "../assets/shaders/VertMVP.vert", "../assets/shaders/FragMVP.frag" },
+    { "WorldPostProcess", "../assets/shaders/WorldPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
+    { "ScreenPostProcess", "../assets/shaders/ScreenPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
     // { "PostProcess", "assets/shaders/FullscreenQuad.vert", "assets/shaders/PostProcess.frag" },
     // { "ShadowMap", "assets/shaders/Shadow.vert", "assets/shaders/Shadow.frag" }
   };
@@ -551,52 +663,83 @@ GLuint RenderServer::CompileShader(GLuint type, const std::string& source){
 
 
 
+void DrawFullScreenQuad() {
+    static GLuint dummyVAO = 0;
+    
+    if (dummyVAO == 0) {
+        glGenVertexArrays(1, &dummyVAO);
+    }
 
-void RenderServer::bakeVertices(RenderItem& item){
-  item.worldVertices.clear(); 
-
-  for (const auto& localVert : item.localVertices) {
-    Vertex worldVert = localVert;
-
-    glm::vec4 transformedPos = item.modelMatrix * glm::vec4(localVert.position, 1.0f);
-    worldVert.position = glm::vec3(transformedPos);
-
-    item.worldVertices.push_back(worldVert);
-  }
+    glBindVertexArray(dummyVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0);
 }
+
+
+
+// void RenderServer::bakeVertices(RenderItem& item){
+//   item.worldVertices.clear(); 
+//
+//   for (const auto& localVert : item.localVertices) {
+//     Vertex worldVert = localVert;
+//
+//     glm::vec4 transformedPos = item.modelMatrix * glm::vec4(localVert.position, 1.0f);
+//     worldVert.position = glm::vec3(transformedPos);
+//
+//     item.worldVertices.push_back(worldVert);
+//   }
+// }
 
 // RenderServer.cpp
 
-RenderItemID RenderServer::RegisterItem(const std::vector<Vertex>& localVerts, 
-    const std::vector<GLuint>& localIndices, 
-    GLuint textureID, 
-    const std::string& pipelineName, 
-    RenderItemLayer layer) 
-{
-  RenderItem newItem;
-  newItem.id = NextID++;
-  newItem.localVertices = localVerts;
-  newItem.localIndices = localIndices;
 
-  newItem.worldVertices.resize(localVerts.size()); 
+void RenderServer::SubmitInstance(const RenderInstance& instance) {
+      switch(instance.layer) {
+        case RenderItemLayer::OPAQUE: opaqueQueue.push_back(instance); break;
+        case RenderItemLayer::TRANSPARENT: transparentQueue.push_back(instance); break;
+        case RenderItemLayer::UI: uiQueue.push_back(instance); break;
+        default: std::cerr<<"error? didnt handle yet lol (submitinstance)"<<std::endl; break;
+      }
+    }
 
-  newItem.textureID = textureID;
-  newItem.pipelineName = pipelineName;
-  newItem.layer = layer;
-  newItem.modelMatrix = glm::mat4(1.0f);
-  newItem.isDirty = true;
+void RenderServer::ClearQueues(){
+        opaqueQueue.clear();
+      transparentQueue.clear();
+      uiQueue.clear();
+   
 
-  activeItems.push_back(newItem);
-  std::cout<<"registered at id = "<<newItem.id<<std::endl;
-  return newItem.id; 
 }
 
-void RenderServer::UpdateTransform(RenderItemID id, const glm::mat4& newMatrix) {
-  for (auto& item : activeItems) {
-    if (item.id == id) {
-      item.modelMatrix = newMatrix;
-      item.isDirty = true;
-      break;
-    }
-  }
-}  
+// RenderItemID RenderServer::RegisterItem(const std::vector<Vertex>& localVerts, 
+//     const std::vector<GLuint>& localIndices, 
+//     GLuint textureID, 
+//     const std::string& pipelineName, 
+//     RenderItemLayer layer) 
+// {
+//   RenderItem newItem;
+//   newItem.id = NextID++;
+//   newItem.localVertices = localVerts;
+//   newItem.localIndices = localIndices;
+//
+//   newItem.worldVertices.resize(localVerts.size()); 
+//
+//   newItem.textureID = textureID;
+//   newItem.pipelineName = pipelineName;
+//   newItem.layer = layer;
+//   newItem.modelMatrix = glm::mat4(1.0f);
+//   newItem.isDirty = true;
+//
+//   activeItems.push_back(newItem);
+//   std::cout<<"registered at id = "<<newItem.id<<std::endl;
+//   return newItem.id; 
+// }
+
+// void RenderServer::UpdateTransform(RenderItemID id, const glm::mat4& newMatrix) {
+//   for (auto& item : activeItems) {
+//     if (item.id == id) {
+//       item.modelMatrix = newMatrix;
+//       item.isDirty = true;
+//       break;
+//     }
+//   }
+// }  

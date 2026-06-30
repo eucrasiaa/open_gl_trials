@@ -8,6 +8,7 @@ class PlayerElem : public RenderNode{
     // SDL_Log("running update (player): %f",this->position.x);
       // this->position.x += 1.0;
       this->position += Vec2{-1.0,0.0} * speed * dt; 
+      isDirty=true;
       Node::update(dt);
 
   }

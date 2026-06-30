@@ -109,7 +109,7 @@ void Engine::shutdown() {
 void Engine::render(double ft) {
   for (auto* node : sceneNodes) {
     if (node != nullptr) {
-      node->render(glm::mat4(1.0f)); // each node will share their rendering 
+      node->triggerCompute(); // each node will share their rendering 
     }
   } 
 }
