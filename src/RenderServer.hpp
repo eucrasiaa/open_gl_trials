@@ -46,6 +46,7 @@ const size_t MAX_VERTEX_COUNT = MAX_SPRITE_COUNT * 4;
 class RenderServer {
 
   private:
+
     // |||||  SDL2 Items  |||||
     // ||||||||||||||||||||||||
     int RSwidth=0;
@@ -65,6 +66,8 @@ class RenderServer {
     GLuint gVertexBufferObject=0;
     // IBO
     GLuint gIndexBufferObject = 0;  
+    // Instance VBO 
+    GLuint gInstanceVBO = 0;
     // pipeline
     std::unordered_map<std::string, Pipeline> gPipelinePrograms{};
 
@@ -108,8 +111,10 @@ class RenderServer {
     
     // render stuff! mostly helpers
     void DrawFullScreenQuad();
-
-
+    void RenderQueue(const std::vector<RenderInstance>& queue);
+    void FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices);
+    void FlushInstancedBatch2d(GLuint textureID, const std::vector<glm::mat4>& matrices);
+  
 
     // class oop stuff
     RenderServer() = default;
@@ -119,6 +124,14 @@ class RenderServer {
 
 
   public:
+
+    
+    // |||||  MiscConfig  |||||
+    // ||||||||||||||||||||||||
+    bool only2D = true;
+    bool doWPP = true;
+    bool doSPP = true;
+
 
     static RenderServer& Get() {
       static RenderServer instance;

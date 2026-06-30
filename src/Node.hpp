@@ -21,8 +21,7 @@ public:
   // virtual void render(const glm::mat4 &parentTransform);
   virtual void addChild(Node *node);
   
-  void triggerCompute(){ 
-    computeTransforms(glm::mat4(1.0f),  isDirty);
-  }
+  virtual void render(const glm::mat4& parentGlobal, bool parentIsDirty);
+  void triggerCompute();
   virtual void computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty);
 };

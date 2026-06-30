@@ -18,6 +18,20 @@ void Node::update(double dt) {
   }
 }
 
+void Node::triggerCompute(){ 
+    // swap to a render call now
+    render(glm::mat4(1.0f),  isDirty);
+    // computeTransforms(glm::mat4(1.0f),  isDirty);
+  }
+
+
+void Node::render(const glm::mat4 &parentTransform, bool parentIsDirty)  {
+        computeTransforms(parentTransform, parentIsDirty);
+        for (auto *elem : children) {
+            elem->render(this->globalTransform, this->isDirty);
+        }
+        this->isDirty = false;
+    }
 
 void Node::computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty) {
   bool needsRecalc = isDirty || parentIsDirty;
