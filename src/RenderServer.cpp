@@ -197,29 +197,32 @@ void RenderServer::render(double dt) {
 
 
 void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
-    if (queue.empty()) return;
-    // collect 
-    std::vector<glm::mat4> batchMatrices;
-    GLuint currentTexture = queue[0].textureID;
+  if (queue.empty()) return;
+  // collect 
+  std::vector<glm::mat4> batchMatrices;
+  GLuint currentTexture = queue[0].textureID;
 
-    // bind 2d VAO here
-    glBindVertexArray(gVertexArrayObject);
-    
-    for (size_t i = 0; i < queue.size(); ++i) {
-        const auto& instance = queue[i];
-        if (instance.textureID != currentTexture) {
-            
-            FlushInstancedBatch2d(currentTexture, batchMatrices);
-            //FlushInstancedBatch(currentTexture, batchMatrices);
-            //restart
-            currentTexture = instance.textureID;
-            batchMatrices.clear();
-        }
-        batchMatrices.push_back(instance.globalTransform);
+  // bind 2d VAO here
+  glBindVertexArray(gVertexArrayObject);
+  std::cout<<"hit renderQueue: sizeof "<<queue.size()<<std::endl;
+  for (size_t i = 0; i < queue.size(); ++i) {
+    const auto& instance = queue[i];
+    if (instance.textureID != currentTexture) {
+      std::cout<<"  textureSwap from "<<currentTexture<<std::endl;
+
+      FlushInstancedBatch2d(currentTexture, batchMatrices);
+      //FlushInstancedBatch(currentTexture, batchMatrices);
+      //restart
+      currentTexture = instance.textureID;
+      std::cout<<"  textureSwap to "<<instance.textureID<<std::endl;
+
+      batchMatrices.clear();
     }
-    FlushInstancedBatch2d(currentTexture, batchMatrices);
-    //FlushInstancedBatch(currentTexture, batchMatrices);
-    glBindVertexArray(0);
+    batchMatrices.push_back(instance.globalTransform);
+  }
+  FlushInstancedBatch2d(currentTexture, batchMatrices);
+  //FlushInstancedBatch(currentTexture, batchMatrices);
+  glBindVertexArray(0);
 }
 
 
@@ -242,6 +245,8 @@ void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint in
 
 
   glBindVertexArray(vaoID); // Now it's dynamic!
+  glActiveTexture(GL_TEXTURE0);
+
   glBindTexture(GL_TEXTURE_2D, textureID);
 
   glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
@@ -249,7 +254,7 @@ void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint in
 
   // Draw 'indexCount' instead of a hardcoded 6
   glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr, matrices.size());
-
+  
 }
 
 bool RenderServer::init(const char* title, int width, int height){
@@ -319,7 +324,10 @@ bool RenderServer::init(const char* title, int width, int height){
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+  
+  glEnable(GL_DEBUG_OUTPUT);
+  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Direct error feedback
+  glDebugMessageCallback(glDebugOutput, nullptr);
   TextureManager::Get().init();
   RSwidth = width;
   RSheight = height;
@@ -329,6 +337,47 @@ bool RenderServer::init(const char* title, int width, int height){
   return true;
 }
 
+void APIENTRY RenderServer::glDebugOutput(GLenum source, 
+                            GLenum type, 
+                            unsigned int id, 
+                            GLenum severity, 
+                            GLsizei length, 
+                            const char* message, 
+                            const void* userParam) 
+{
+    if (id == 131169 || id == 131185 || id == 131204 || id == 131218) return;
+
+    std::cout << "---------------" << std::endl;
+    std::cout << "Debug message (" << id << "): " << message << std::endl;
+
+    switch (source) {
+        case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+        case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+        case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+    } std::cout << std::endl;
+    switch (type) {
+        case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break; 
+        case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+        case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+        case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+        case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+        case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+    } std::cout << std::endl;
+    
+    switch (severity) {
+        case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+        case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+        case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+    } std::cout << std::endl;
+    std::cout << "---------------" << std::endl;
+}
 
 
 int RenderServer::changeResolution(int width, int height) {
@@ -459,9 +508,21 @@ void RenderServer::VertexSpecification(){
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_SPRITE_COUNT * 6 * sizeof(GLuint), nullptr, GL_DYNAMIC_DRAW);
 
   // // Vertex Instance Buffer thing 
-  // glGenBuffers(1, &gInstanceVBO);
-  // glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
-  // glBufferData(GL_ARRAY_BUFFER, instanceMatrices.size() * sizeof(glm::mat4), &instanceMatrices[0], GL_STATIC_DRAW);
+  glGenBuffers(1, &gInstanceVBO);
+  glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
+  // allocate 
+  GLsizeiptr maxInstanceBufferSize = MAX_SPRITE_COUNT * sizeof(glm::mat4);
+  glBufferData(GL_ARRAY_BUFFER, maxInstanceBufferSize, nullptr, GL_DYNAMIC_DRAW);
+
+  std::size_t vec4Size = sizeof(glm::vec4);
+  
+  for (int i = 0; i < 4; i++) {
+      GLuint attribLocation = 4 + i;
+      glEnableVertexAttribArray(attribLocation);
+      glVertexAttribPointer(attribLocation, 4, GL_FLOAT, GL_FALSE, 
+                            sizeof(glm::mat4), (void*)(i * vec4Size));
+      glVertexAttribDivisor(attribLocation, 1); 
+  }
 
   //unbindbind?
   glBindVertexArray(0);
