@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 #include <glm/mat4x4.hpp>
+#include <string>
 
 struct Vertex {
   glm::vec3 position;
@@ -25,15 +26,18 @@ enum class RenderItemLayer{
   POSTPROCESS_SCREEN,
   CAMERA
 };
-struct RenderItem {
+using RenderItemID = uint32_t;
+
+struct RenderItem { 
+    RenderItemID id;
     std::vector<Vertex> localVertices; // quad for 2d , 3d mesh
     std::vector<GLuint> localIndices;  // {0, 1, 2, 2, 3, 0} for a quad
     std::vector<Vertex> worldVertices;
-    GLuint textureID; //from textureMgr 
-    glm::mat4 modelMatrix; // rot loc scale 
-    int shaderPipelineID; //which pipeline? 
-    RenderItemLayer layer;
-    bool isDirty;
+    GLuint textureID = 0; //from textureMgr 
+    glm::mat4 modelMatrix = glm::mat4(1.0f); // rot loc scale 
+    std::string pipelineName = "MVP";
+    RenderItemLayer layer = RenderItemLayer::OPAQUE;
+    bool isDirty = true;
 };
 
 

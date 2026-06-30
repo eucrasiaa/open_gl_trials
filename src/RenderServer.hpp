@@ -75,7 +75,19 @@ class RenderServer {
     void shutdown();
 
     std::vector<Vertex> batchBuffer; 
+
+    RenderItemID RegisterItem(const std::vector<Vertex>& localVerts, 
+                              const std::vector<GLuint>& localIndices, 
+                              GLuint textureID, 
+                              const std::string& pipelineName, 
+                              RenderItemLayer layer);
+    void UpdateTransform(RenderItemID id, const glm::mat4& newMatrix);
+    void UnregisterItem(RenderItemID id);
+
   private:
+
+    std::vector<RenderItem> activeItems;
+    RenderItemID NextID = 0;
     GLenum GetShaderTypeFromExtension(const std::string& filePath);
 
     // slop
@@ -95,7 +107,6 @@ class RenderServer {
     RenderServer(const RenderServer&) = delete;
     RenderServer& operator=(const RenderServer&) = delete;
     
-    GLuint registerItem(RenderItem renderItem);
    
     void bakeVertices(RenderItem& item);
 };

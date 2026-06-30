@@ -1,4 +1,5 @@
 #include "RenderServer.hpp"
+#include "RenderItem.hpp"
 #include "glad/glad.h"
 #include <iostream>
 
@@ -23,6 +24,9 @@ int RenderServer::BindPipeline(const std::string& name) {
 void RenderServer::render(double dt){
   // glDisable(GL_DEPTH_TEST);
   // glDisable(GL_CULL_FACE);
+  //
+  // glUniformMatrix4fv(locView, 1, GL_FALSE, glm::value_ptr(cameraViewMatrix));
+  // glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(cameraProjMatrix));
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -401,15 +405,51 @@ GLuint RenderServer::CompileShader(GLuint type, const std::string& source){
   return shaderObject;
 }
 
-    void RenderServer::bakeVertices(RenderItem& item){
-    item.worldVertices.clear(); // A cached vector of the transformed verts
-    
-    for (const auto& localVert : item.localVertices) {
-        Vertex worldVert = localVert;
-        
-        // Transform the local vertex by the node's model matrix ON THE CPU
-        glm::vec4 transformedPos = item.modelMatrix * glm::vec4(localVert.position, 1.0f);
-        worldVert.position = glm::vec3(transformedPos);
-        
-        item.worldVertices.push_back(worldVert);
+void RenderServer::bakeVertices(RenderItem& item){
+  item.worldVertices.clear(); 
 
+  for (const auto& localVert : item.localVertices) {
+    Vertex worldVert = localVert;
+
+    glm::vec4 transformedPos = item.modelMatrix * glm::vec4(localVert.position, 1.0f);
+    worldVert.position = glm::vec3(transformedPos);
+
+    item.worldVertices.push_back(worldVert);
+  }
+}
+
+// RenderServer.cpp
+
+RenderItemID RenderServer::RegisterItem(const std::vector<Vertex>& localVerts, 
+                                        const std::vector<GLuint>& localIndices, 
+                                        GLuint textureID, 
+                                        const std::string& pipelineName, 
+                                        RenderItemLayer layer) 
+{
+    RenderItem newItem;
+    newItem.id = NextID++;
+    newItem.localVertices = localVerts;
+    newItem.localIndices = localIndices;
+    
+    newItem.worldVertices.resize(localVerts.size()); 
+    
+    newItem.textureID = textureID;
+    newItem.pipelineName = pipelineName;
+    newItem.layer = layer;
+    newItem.modelMatrix = glm::mat4(1.0f);
+    newItem.isDirty = true;
+
+    activeItems.push_back(newItem);
+    
+    return newItem.id; 
+}
+
+void RenderServer::UpdateTransform(RenderItemID id, const glm::mat4& newMatrix) {
+    for (auto& item : activeItems) {
+        if (item.id == id) {
+            item.modelMatrix = newMatrix;
+            item.isDirty = true;
+            break;
+        }
+    }
+}  

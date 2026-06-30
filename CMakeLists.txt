@@ -64,7 +64,7 @@ file(GLOB_RECURSE PROJECT_HEADERS CONFIGURE_DEPENDS
     "include/*.hpp"
 )
 # idk brah
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+# set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 message(STATUS "--- DEBUG ---")
 message(STATUS "Source files found: ${PROJECT_SOURCES}")
@@ -121,19 +121,20 @@ endif()
 
 # This tells the compiler/linker to look for standard "main" instead of "WinMain"
 if(MINGW)
-  target_link_options(${PROJECT_NAME} PRIVATE "-static-libgcc" "-static-libstdc++" "-static")
-    # target_link_options(${PROJECT_NAME} PRIVATE "-mconsole")
-endif()
+  # target_link_options(${PROJECT_NAME} PRIVATE "-static-libgcc" "-static-libstdc++" "-static")
+    target_link_options(${PROJECT_NAME} PRIVATE "-mconsole")
+# endif()
     #
     #     if(MINGW OR CYGWIN)
-    #     target_link_libraries(${PROJECT_NAME} PRIVATE 
-    #         setupapi
-    #         winmm
-    #         version
-    #         imm32
-    #         mingw32
-    #     )
-    # endif()
+        target_link_libraries(${PROJECT_NAME} PRIVATE 
+            setupapi
+            SDL2main
+            winmm
+            version
+            imm32
+            mingw32
+        )
+    endif()
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BACKEND_SDL2)
 elseif(BACKEND STREQUAL "RAYLIB")
     message(STATUS "Configuring project with Raylib backend")
@@ -199,11 +200,11 @@ if(USE_VALGRIND)
     endif()
 endif()
 # dll stuff
-if(WIN32)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>
-        COMMAND_EXPAND_LISTS
-    )
-endif()
+# if(WIN32)
+#     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#             $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+#             $<TARGET_FILE_DIR:${PROJECT_NAME}>
+#         COMMAND_EXPAND_LISTS
+#     )
+# endif()

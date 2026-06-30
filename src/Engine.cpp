@@ -48,12 +48,15 @@ void Engine::changeResolution(int direction) {
 
 
 void Engine::update(double dt) {
-  if (sceneNodes.size() > 1) {
-    Node* player = sceneNodes[1];
-
-    float speed = 150.0f;
-    player->position.x += speed * static_cast<float>(dt);
+  for (auto *node : sceneNodes){
+    node->update(dt);
   }
+  // if (sceneNodes.size() > 1) {
+  //   Node* player = sceneNodes[1];
+  //
+  //   float speed = 150.0f;
+  //   player->position.x += speed * static_cast<float>(dt);
+  // }
 }
 
 

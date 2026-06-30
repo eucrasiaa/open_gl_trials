@@ -20,7 +20,16 @@ class Node {
       }
     }
 
-    void render();
+    void update(double dt){
+      for (auto *elem : children){
+        elem->update(dt);
+      }
+    }
+    void render(){
+      for (auto *elem : children){
+        elem->render();
+      }
+    }
 
     glm::mat4 calculateTransform() {
       //ident matrix
@@ -42,13 +51,23 @@ class RenderElem : public Node {
   public:
     std::string texture ="";
     GLuint renderID;
-    RenderElem(const std::string & txt): texture(txt){
-      std::cout<<"hi initializied with texture" << txt<<std::endl;
-      RenderItem item;
-      item.textureID = TextureManager::Get().getTexture("player.png");
-      item.modelMatrix = this->calculateTransform();
-      item.layer = RenderItemLayer::OPAQUE;
-      this->renderID = RenderServer::Get().registerItem(item);
+    RenderItemLayer renderLayer;
+    RenderElem() = default;
+    void init(const std::string& texturePath, RenderItemLayer renderLayer) {
+      GLuint texID = TextureManager::Get().getTexture(texturePath);
 
+      std::vector<Vertex> localQuad = {
+        { {-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0.0f }, // Bottom-Left
+        { { 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0.0f }, // Bottom-Right
+        { { 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0.0f }, // Top-Right
+        { {-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, 0.0f }  // Top-Left
+      };
+
+      std::vector<GLuint> indices = {
+        0, 1, 2, 
+        2, 3, 0  
+      };
+
+      this->renderID = RenderServer::Get().RegisterItem(localQuad, indices, texID, "Basic", renderLayer);
     }
 };
