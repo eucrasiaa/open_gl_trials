@@ -28,10 +28,16 @@ void RenderServer::render(double dt) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
 
   // sort bucket by texture 
-  std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
-        return a.textureID < b.textureID;
-    });
+  // std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
+  //       return a.textureID < b.textureID;
+  //   });
 
+std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
+    if (a.vaoID != b.vaoID) {
+        return a.vaoID < b.vaoID; // mesh types
+    }
+    return a.textureID < b.textureID; // cubes by texture
+});
   // 2. sort transparent by camera dist? see notes
   // TODO: eventually tie to camera pos i think
   std::sort(transparentQueue.begin(), transparentQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
@@ -234,29 +240,32 @@ void RenderServer::render(double dt) {
 
 void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
   if (queue.empty()) return;
+  GLuint currentVAO = queue[0].vaoID == 0 ? gVertexArrayObject : queue[0].vaoID;
+  GLuint currentTexture = queue[0].textureID;
+  GLuint currentIndexCount = queue[0].indexCount;
   // collect 
   std::vector<glm::mat4> batchMatrices;
-  GLuint currentTexture = queue[0].textureID;
-
+  
   // bind 2d VAO here
   glBindVertexArray(gVertexArrayObject);
   std::cout<<"hit renderQueue: sizeof "<<queue.size()<<std::endl;
   for (size_t i = 0; i < queue.size(); ++i) {
     const auto& instance = queue[i];
-    if (instance.textureID != currentTexture) {
-      std::cout<<"  textureSwap from "<<currentTexture<<std::endl;
-
-      FlushInstancedBatch2d(currentTexture, batchMatrices);
-      //FlushInstancedBatch(currentTexture, batchMatrices);
-      //restart
-      currentTexture = instance.textureID;
-      std::cout<<"  textureSwap to "<<instance.textureID<<std::endl;
-
-      batchMatrices.clear();
-    }
+    GLuint instanceVAO = instance.vaoID == 0 ? gVertexArrayObject : instance.vaoID;
+    if (instanceVAO != currentVAO || instance.textureID != currentTexture) {
+            FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+            
+            currentVAO = instanceVAO;
+            currentTexture = instance.textureID;
+            currentIndexCount = instance.indexCount;
+            batchMatrices.clear();
+        }
+        batchMatrices.push_back(instance.globalTransform);
     batchMatrices.push_back(instance.globalTransform);
+    // batchMatrices.push_back(instance.globalTransform);
   }
-  FlushInstancedBatch2d(currentTexture, batchMatrices);
+  FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+  // FlushInstancedBatch2d(currentTexture, batchMatrices);
   //FlushInstancedBatch(currentTexture, batchMatrices);
   glBindVertexArray(0);
 }
@@ -266,21 +275,8 @@ void RenderServer::FlushInstancedBatch2d(GLuint textureID, const std::vector<glm
   
   FlushInstancedBatch(gVertexArrayObject, textureID, 6, matrices);
 }
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/io.hpp>
 void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices) {
-  // if (matrices.empty()) return;
-
-  // //bind
-  // glActiveTexture(GL_TEXTURE0);
-  // glBindTexture(GL_TEXTURE_2D, textureID);
-  // // matrix to Instance VBO
-  // glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
-  // glBufferSubData(GL_ARRAY_BUFFER, 0, matrices.size() * sizeof(glm::mat4), matrices.data());
-  //
-  // // 2d draw can hardcode 6
-  // glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(matrices.size())); // note of hardcoding 6 for 2d
-
   std::cout<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
     for (const auto& mat : matrices) {
         std::cout << mat << std::endl;

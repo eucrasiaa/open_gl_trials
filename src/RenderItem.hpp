@@ -33,6 +33,7 @@ struct RenderInstance {
     glm::mat4 globalTransform; // where
     GLuint textureID = 0; // which texture 
     GLuint vaoID=0; // the shape (assumes 0 for universal for now)
+    GLuint indexCount = 6;
     std::string pipelineName = "MVP";
     RenderItemLayer layer = RenderItemLayer::OPAQUE;
     bool isDirty = true;

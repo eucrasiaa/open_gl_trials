@@ -1,4 +1,6 @@
 #pragma once
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
 #include <iostream>
@@ -66,8 +68,6 @@ class RenderServer {
     GLuint gVertexBufferObject=0;
     // IBO
     GLuint gIndexBufferObject = 0;  
-    // Instance VBO 
-    GLuint gInstanceVBO = 0;
     // pipeline
     std::unordered_map<std::string, Pipeline> gPipelinePrograms{};
 
@@ -130,6 +130,8 @@ class RenderServer {
   public:
 
     
+    // Instance VBO 
+    GLuint gInstanceVBO = 0;
     // |||||  MiscConfig  |||||
     // ||||||||||||||||||||||||
     bool only2D = true;

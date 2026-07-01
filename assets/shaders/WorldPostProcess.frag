@@ -11,19 +11,16 @@ void main()
     float lineWidth = 200.0; 
     float speed = -50.0; 
     // float speed=0.0;
-    // 1. Calculate the moving coordinate using the built-in pixel position
     float movingY = gl_FragCoord.y - (u_InversionShift * speed);
 
-    // 2. Fetch the framebuffer color using your input TexCoords
     vec4 bufferAData = texture(worldColorTexture, TexCoords);
     vec3 invertedColor = vec3(1.0) - bufferAData.rgb;
 
-    // 3. Calculate the alternating pattern
     float pattern = mod(floor(movingY / lineWidth), 2.0);
     
-    // 4. Output the result based on the pattern
+
     if (pattern < 0.5) {
-        FragColor = vec4(invertedColor, bufferAData.a); // Preserves background alpha
+        FragColor = vec4(invertedColor, bufferAData.a); 
     } else {
         FragColor = bufferAData;
     }
