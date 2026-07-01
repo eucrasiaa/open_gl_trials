@@ -107,13 +107,10 @@ MeshData MeshManager::loadMesh(const std::string& filepath, GLuint instanceVBO) 
         return data;
     }
 // MeshData MeshManager::loadMesh(const std::string& filepath) {
-//   // If we already loaded it, just return the VAO!
 //   if (meshes.count(filepath)) return meshes[filepath];
 //
 //   std::vector<Vertex> parsedVertices;
 //   std::vector<GLuint> parsedIndices;
-//
-//   // ... (Parsing logic here) ...
 //
 //   GLuint vao, vbo, ibo;
 //   glGenVertexArrays(1, &vao);
@@ -131,10 +128,6 @@ MeshData MeshManager::loadMesh(const std::string& filepath, GLuint instanceVBO) 
 //
 //   // Set Vertex Attributes (Position, Color, UV)
 //   // ... (Same as your 2D setup) ...
-//
-//   // Set Instance Attributes (The mat4)
-//   // NOTE: You must bind your gInstanceVBO here and set up attributes 4,5,6,7!
-//
 //   glBindVertexArray(0);
 //
 //   MeshData data = { vao, static_cast<GLuint>(parsedIndices.size()) };
