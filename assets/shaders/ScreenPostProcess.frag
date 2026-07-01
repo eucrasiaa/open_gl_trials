@@ -6,10 +6,12 @@ uniform sampler2D postProcessColorTexture;
 
 void main()
 {
-    vec3 finalColor = texture(postProcessColorTexture, TexCoords).rgb;
+    vec3 originalColor = texture(postProcessColorTexture, TexCoords).rgb;
     
-    // just red tint it all
-    vec3 redTint = finalColor * vec3(1.0, 0.2, 0.2);
+    vec3 targetTint = vec3(1.0, 1.0, 0.0); 
+    float tintStrength = 1.0; 
     
-    FragColor = vec4(redTint, 1.0);
+    vec3 finalColor = mix(originalColor, originalColor * targetTint, tintStrength);
+    
+    FragColor = vec4(finalColor, 1.0);
 }

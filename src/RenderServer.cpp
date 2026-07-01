@@ -46,9 +46,11 @@ void RenderServer::render(double dt) {
   // |-|-|-|            Doesnt Use: Blend                |-|-|-|
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 
+  // glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, worldFBO);
-  glEnable(GL_DEPTH_TEST); // test
-  glDepthMask(GL_TRUE); // mask
+  // glEnable(GL_DEPTH_TEST); // test
+  glDisable(GL_DEPTH_TEST);
+  // glDepthMask(GL_TRUE); // mask
   glDisable(GL_BLEND); // blend
   //trial
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -58,9 +60,22 @@ void RenderServer::render(double dt) {
 
   int pickedPipeline = BindPipeline("MVP"); 
   if (pickedPipeline == -1) return;
+
+
+  // uniforms here!
+  setProjectionUniform(pickedPipeline);
+
+  GLint locTex = glGetUniformLocation(pickedPipeline, "u_Texture"); 
+  if (locTex != -1) {
+      glUniform1i(locTex, 0); // Tell the sampler to read from GL_TEXTURE0
+  }
+
+  // camera matrix would go in here
   RenderQueue(opaqueQueue);
 
-
+  // SDL_GL_SwapWindow(window);
+  // ClearQueues();
+  // return;
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // |-|-|-|          Transparent Layer Pass             |-|-|-|
   // |-|-|-|     Needs: WFB, Depth Test, Blend           |-|-|-|
@@ -74,8 +89,17 @@ void RenderServer::render(double dt) {
   // frame buffer + depth test still bound.
   glDepthMask(GL_FALSE); // mask
   glEnable(GL_BLEND); // blend
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   pickedPipeline = BindPipeline("MVP"); 
   if (pickedPipeline == -1) return;
+
+  // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1.0f, 1.0f);
+  setProjectionUniform(pickedPipeline);
+  locTex = glGetUniformLocation(pickedPipeline, "u_Texture"); 
+  if (locTex != -1) {
+      glUniform1i(locTex, 0); 
+  }
   RenderQueue(transparentQueue); 
 
 
@@ -97,26 +121,33 @@ void RenderServer::render(double dt) {
     pickedPipeline = BindPipeline("WorldPostProcess");
     if (pickedPipeline == -1) return;
 
-    float minX = 0.4f;
-    float minY = 0.4f;
-    float maxX = 0.6f;
-    float maxY = 0.6f;
-    // Bonus: for testing
-    float frequency = 0.4f;
-    float moveRadius = 0.3f; 
-    float shiftX = std::sin(dt * frequency) * moveRadius;
-    float shiftY = std::cos(dt * frequency) * moveRadius;
 
-    float currentMinX = minX + shiftX;
-    float currentMinY = minY + shiftY;
-    float currentMaxX = maxX + shiftX;
-    float currentMaxY = maxY + shiftY;
-    // end bonus
-    GLint boundsLoc = glGetUniformLocation(pickedPipeline, "u_InversionBounds");
+    GLint boundsLoc = glGetUniformLocation(pickedPipeline, "u_InversionShift");
     if (boundsLoc != -1) {
-       glUniform4f(boundsLoc, currentMinX, currentMinY, currentMaxX, currentMaxY);  
+      glUniform1f(boundsLoc, static_cast<float>(dt));  
       // glUniform4f(boundsLoc, minX, minY, maxX, maxY);
     }
+ 
+    // float minX = 0.4f;
+    // float minY = 0.4f;
+    // float maxX = 0.6f;
+    // float maxY = 0.6f;
+    // // Bonus: for testing
+    // float frequency = 1.0f;
+    // float moveRadius = 0.3f; 
+    // float shiftX = std::sin(dt * frequency) * moveRadius;
+    // float shiftY = std::cos(dt * frequency) * moveRadius;
+    //
+    // float currentMinX = minX + shiftX;
+    // float currentMinY = minY + shiftY;
+    // float currentMaxX = maxX + shiftX;
+    // float currentMaxY = maxY + shiftY;
+    // // end bonus
+    // GLint boundsLoc = glGetUniformLocation(pickedPipeline, "u_InversionBounds");
+    // if (boundsLoc != -1) {
+    //    glUniform4f(boundsLoc, currentMinX, currentMinY, currentMaxX, currentMaxY);  
+    //   // glUniform4f(boundsLoc, minX, minY, maxX, maxY);
+    // }
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,worldColorTex); // bind texture from worldFBO
@@ -151,6 +182,11 @@ void RenderServer::render(double dt) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
   pickedPipeline = BindPipeline("MVP");
   if (pickedPipeline == -1) return;
+
+
+  setProjectionUniform(pickedPipeline);
+
+
   RenderQueue(uiQueue);
 
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
@@ -227,9 +263,11 @@ void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
 
 
 void RenderServer::FlushInstancedBatch2d(GLuint textureID, const std::vector<glm::mat4>& matrices){
+  
   FlushInstancedBatch(gVertexArrayObject, textureID, 6, matrices);
 }
-
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/io.hpp>
 void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices) {
   // if (matrices.empty()) return;
 
@@ -243,12 +281,15 @@ void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint in
   // // 2d draw can hardcode 6
   // glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(matrices.size())); // note of hardcoding 6 for 2d
 
-
+  std::cout<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
+    for (const auto& mat : matrices) {
+        std::cout << mat << std::endl;
+    }
   glBindVertexArray(vaoID); // Now it's dynamic!
+  // texture bind:
   glActiveTexture(GL_TEXTURE0);
-
   glBindTexture(GL_TEXTURE_2D, textureID);
-
+  
   glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, matrices.size() * sizeof(glm::mat4), matrices.data());
 
@@ -483,8 +524,21 @@ void RenderServer::VertexSpecification(){
   glGenBuffers(1, &gVertexBufferObject);
   glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
 
+
+  // static 1x1 buff for basic 
+  std::vector<Vertex> quadVertices = {
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0.0f},
+        {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0.0f}, 
+        {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0.0f},
+        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, 0.0f}
+  };
+  std::vector<GLuint> quadIndices = {0, 1, 2, 2, 3, 0}; //0 1 2 for tri 1, 2 3 0 for tri2
+
+
+  glBufferData(GL_ARRAY_BUFFER, quadVertices.size() * sizeof(Vertex), quadVertices.data(), GL_STATIC_DRAW);
+
   // notible: marked as dynamic (will be written to often?, preealloc'd big size;
-  glBufferData(GL_ARRAY_BUFFER, MAX_VERTEX_COUNT * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
+  // glBufferData(GL_ARRAY_BUFFER, MAX_VERTEX_COUNT * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
 
 
   // vertex struct is now
@@ -503,16 +557,16 @@ void RenderServer::VertexSpecification(){
 
 
   // IBO 
+
   glGenBuffers(1, &gIndexBufferObject);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIndexBufferObject);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_SPRITE_COUNT * 6 * sizeof(GLuint), nullptr, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices.size() * sizeof(GLuint), quadIndices.data(), GL_STATIC_DRAW);
 
-  // // Vertex Instance Buffer thing 
+  // // Vertex Instance Buffer thing
   glGenBuffers(1, &gInstanceVBO);
   glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
   // allocate 
-  GLsizeiptr maxInstanceBufferSize = MAX_SPRITE_COUNT * sizeof(glm::mat4);
-  glBufferData(GL_ARRAY_BUFFER, maxInstanceBufferSize, nullptr, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, MAX_SPRITE_COUNT * sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
 
   std::size_t vec4Size = sizeof(glm::vec4);
   
@@ -660,6 +714,7 @@ void RenderServer::CreateGraphicsPipeline(const PipelineConfig& config){
   // Save the finished pipeline into our server's map
   Pipeline pipeline;
   pipeline.programID = programObject;
+  std::cout<<"just loaded pipeline named: "<<config.name<<std::endl;
   RenderServer::gPipelinePrograms[config.name] = pipeline;
 
 }
@@ -746,3 +801,10 @@ void RenderServer::ClearQueues(){
 
 }
 
+void RenderServer::setProjectionUniform(GLuint programID){
+  glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1.0f, 1.0f);
+  GLint locProj = glGetUniformLocation(programID, "u_Projection");
+  if(locProj != -1) {
+      glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
+  }
+}

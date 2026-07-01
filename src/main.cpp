@@ -29,14 +29,14 @@ int main(int argc, char* argv[]) {
 
 
     PlayerElem* player = new PlayerElem();
-    player->init("../assets/textures/player.png", RenderItemLayer::OPAQUE);
+    player->init("../assets/textures/player.png", RenderItemLayer::TRANSPARENT);
     // player->position = Vec2(1280.0/2.0, 720.0/2.0);
     
     player->position = Vec2(0.0, 0.0);
     player->scale = Vec2(1.0f, 1.0f);
     
     PlayerElem_alt* player2 = new PlayerElem_alt();
-    player2->init("../assets/textures/x.png", RenderItemLayer::OPAQUE);
+    player2->init("../assets/textures/x.png", RenderItemLayer::TRANSPARENT);
     player2->position = Vec2(1280.0/2.0, 720.0/2.0);
     player2->scale = Vec2(50.0f, 50.0f);
     player2->addChild(player); 

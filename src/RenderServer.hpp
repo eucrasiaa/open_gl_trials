@@ -115,6 +115,7 @@ class RenderServer {
     void FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices);
     void FlushInstancedBatch2d(GLuint textureID, const std::vector<glm::mat4>& matrices);
   
+    void setProjectionUniform(GLuint programID);
 
     // class oop stuff
     RenderServer() = default;
