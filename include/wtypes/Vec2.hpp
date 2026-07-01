@@ -3,8 +3,12 @@
 #include "math/math_common.hpp"
 #include <cmath>
 #include <format>
+#include <glm/ext/vector_float2.hpp>
 #include <iostream>
 struct Vec2{
+  Vec2(const glm::vec2& g) : x(g.x), y(g.y) {}
+  operator glm::vec2() const { return glm::vec2(x, y); }
+
   float x = 0.0f;
   float y = 0.0f;
   constexpr Vec2(float x = 0.0f, float y = 0.0f) : x(x), y(y) {};
@@ -141,9 +145,9 @@ struct std::formatter<Vec2> : std::formatter<string_view> {
 };
 // as per Vec3, i doing a Z up. so left right on x
 inline constexpr Vec2 Vec2::ZERO   { 0.0f,  0.0f };
-inline constexpr Vec2 LEFT   {-1.0f,  0.0f };
-inline constexpr Vec2 RIGHT  { 1.0f,  0.0f };
-inline constexpr Vec2 UP     { 0.0f,  1.0f };
-inline constexpr Vec2 DOWN   { 0.0f,  -1.0f };
+inline constexpr Vec2 Vec2::LEFT   {-1.0f,  0.0f };
+inline constexpr Vec2 Vec2::RIGHT  { 1.0f,  0.0f };
+inline constexpr Vec2 Vec2::UP     { 0.0f,  1.0f };
+inline constexpr Vec2 Vec2::DOWN   { 0.0f,  -1.0f };
 
 

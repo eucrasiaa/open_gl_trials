@@ -1,18 +1,28 @@
 #pragma once
-#include "./wtypes/Vec2.hpp"
+#include "./wtypes/Vec3.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 
 class Node {
 public:
-  Vec2 position = Vec2::ZERO;
-  float rotation = 0.0f; // x/y tracking or angle mapping
-  Vec2 scale = Vec2(1.0f, 1.0f);
+  // Vec2 position = Vec2::ZERO;
+  // float rotation = 0.0f; // x/y tracking or angle mapping
+  // Vec2 scale = Vec2(1.0f, 1.0f);
+  glm::vec3 position = glm::vec3(0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f); // x (pitch), y (yaw), z (roll) in degrees
+    glm::vec3 scale    = glm::vec3(1.0f);
   glm::mat4 localTransform = glm::mat4(1.0f);
   glm::mat4 globalTransform = glm::mat4(1.0f);
   bool isDirty = true; // for initial sync math!  
   std::vector<Node *> children;
 
+
+
+  glm::vec2 getWorldScale() const {
+    float worldWidth  = glm::length(glm::vec3(globalTransform[0]));
+    float worldHeight = glm::length(glm::vec3(globalTransform[1]));
+    return glm::vec2(worldWidth, worldHeight);
+}
   void markDirty() {
     isDirty = true;
   }

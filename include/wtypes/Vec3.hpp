@@ -3,10 +3,14 @@
 #include "math/math_common.hpp"
 #include <cmath>
 #include <format>
+#include <glm/ext/vector_float3.hpp>
 #include <iostream>
 
 // GOING OFF A Z up b/c i know blender best
 struct Vec3{
+
+  Vec3(const glm::vec3& g) : x(g.x), y(g.y), z(g.z) {}
+  operator glm::vec3() const { return glm::vec3(x, y, z); }
   float x = 0.0f;
   float y = 0.0f;
   float z = 0.0f;
@@ -159,10 +163,10 @@ struct std::formatter<Vec3> : std::formatter<string_view> {
         return std::format_to(ctx.out(), "({}, {}, {})", v.x, v.y, v.z);
     }
 };
-static inline constexpr Vec3 ZERO   { 0.0f,  0.0f,  0.0f };
-static inline constexpr Vec3 LEFT   {-1.0f,  0.0f,  0.0f };
-static inline constexpr Vec3 RIGHT  { 1.0f,  0.0f,  0.0f };
-static inline constexpr Vec3 FORWARD{ 0.0f,  1.0f,  0.0f }; // Y positive
-static inline constexpr Vec3 BACK   { 0.0f, -1.0f,  0.0f }; // Y negative
-static inline constexpr Vec3 UP     { 0.0f,  0.0f,  1.0f }; // Z positive
-static inline constexpr Vec3 DOWN   { 0.0f,  0.0f, -1.0f }; // Z negative
+inline constexpr Vec3 Vec3::ZERO   { 0.0f,  0.0f,  0.0f };
+inline constexpr Vec3 Vec3::LEFT   {-1.0f,  0.0f,  0.0f };
+inline constexpr Vec3 Vec3::RIGHT  { 1.0f,  0.0f,  0.0f };
+inline constexpr Vec3 Vec3::FORWARD{ 0.0f,  1.0f,  0.0f }; // Y positive
+inline constexpr Vec3 Vec3::BACK   { 0.0f, -1.0f,  0.0f }; // Y negative
+inline constexpr Vec3 Vec3::UP     { 0.0f,  0.0f,  1.0f }; // Z positive
+inline constexpr Vec3 Vec3::DOWN   { 0.0f,  0.0f, -1.0f }; // Z negative

@@ -19,36 +19,62 @@ void Node::update(double dt) {
 }
 
 void Node::triggerCompute(){ 
-    // swap to a render call now
-    render(glm::mat4(1.0f),  isDirty);
-    // computeTransforms(glm::mat4(1.0f),  isDirty);
-  }
+  // swap to a render call now
+  render(glm::mat4(1.0f),  isDirty);
+  // computeTransforms(glm::mat4(1.0f),  isDirty);
+}
 
 
 void Node::render(const glm::mat4 &parentTransform, bool parentIsDirty)  {
-        computeTransforms(parentTransform, parentIsDirty);
-        for (auto *elem : children) {
-            elem->render(this->globalTransform, this->isDirty);
-        }
-        this->isDirty = false;
-    }
+  computeTransforms(parentTransform, parentIsDirty);
+  for (auto *elem : children) {
+    elem->render(this->globalTransform, this->isDirty);
+  }
+  this->isDirty = false;
+}
+
+// void Node::computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty) {
+//   bool needsRecalc = isDirty || parentIsDirty;
+//
+//   if (needsRecalc) {
+//     //trs
+//     localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.0f));
+//     localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+//     localTransform = glm::scale(localTransform, glm::vec3(scale.x, scale.y, 1.0f));
+//
+//     //global
+//     globalTransform = parentGlobal * localTransform;
+//     //fixflag
+//     isDirty = false;
+//   }
+//
+//   //tick down!
+//   for (auto* child : children) {
+//     child->computeTransforms(globalTransform, needsRecalc);
+//   }
+// }
 
 void Node::computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty) {
   bool needsRecalc = isDirty || parentIsDirty;
 
   if (needsRecalc) {
-    //trs
-    localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.0f));
-    localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-    localTransform = glm::scale(localTransform, glm::vec3(scale.x, scale.y, 1.0f));
+    glm::mat4 transform = glm::mat4(1.0f);
 
-    //global
+    transform = glm::translate(transform, position);
+
+    // rotate: apply y, x, z - as per euler 
+    transform = glm::rotate(transform, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f)); // YAW
+    transform = glm::rotate(transform, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)); // PITCH
+    transform = glm::rotate(transform, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f)); // ROLL
+
+    transform = glm::scale(transform, scale);
+
+    localTransform = transform;
     globalTransform = parentGlobal * localTransform;
-    //fixflag
+
     isDirty = false;
   }
-
-  //tick down!
+  //tick down
   for (auto* child : children) {
     child->computeTransforms(globalTransform, needsRecalc);
   }

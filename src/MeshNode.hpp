@@ -22,7 +22,15 @@ public:
         this->vaoID = mesh.vaoID;
         this->indexCount = mesh.indexCount;
     }
+    void update(double dt) override {
+      std::cout<<"MeshUpdateTick :"<< vaoID<<std::endl;
+      this->rotation.x += 45.0f * dt;    
+      this->rotation.y += 45.0f * dt;
+      // this->rotation.z += 45.0f * dt;
+            isDirty=true;
 
+      Node::update(dt);
+    }
     void render(const glm::mat4 &parentTransform, bool parentIsDirty) override {
         computeTransforms(parentTransform, parentIsDirty);
 

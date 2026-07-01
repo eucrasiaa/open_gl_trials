@@ -8,23 +8,37 @@ uniform float u_InversionShift;
 
 void main()
 {
-    float lineWidth = 200.0; 
-    float speed = -50.0; 
-    // float speed=0.0;
-    float movingY = gl_FragCoord.y - (u_InversionShift * speed);
 
-    vec4 bufferAData = texture(worldColorTexture, TexCoords);
-    vec3 invertedColor = vec3(1.0) - bufferAData.rgb;
-
-    float pattern = mod(floor(movingY / lineWidth), 2.0);
+    vec4 baseData = texture(worldColorTexture, TexCoords);
     
+    float scanlineValue = sin(gl_FragCoord.y * 1.5);
+    float scanlineAlpha = mix(0.85, 1.0, (scanlineValue + 1.0) * 0.5);
 
-    if (pattern < 0.5) {
-        FragColor = vec4(invertedColor, bufferAData.a); 
-    } else {
-        FragColor = bufferAData;
-    }
+    float rollSpeed = 2.0; 
+    float rollFrequency = 0.01; 
+    float rollingValue = sin(gl_FragCoord.y * rollFrequency + (u_InversionShift * rollSpeed));
+    float rollAlpha = mix(0.92, 1.0, (rollingValue + 1.0) * 0.5);
+    vec3 finalColor = baseData.rgb * scanlineAlpha * rollAlpha;
 
+    FragColor = vec4(finalColor, baseData.a);
+
+//     float lineWidth = 200.0; 
+//     float speed = -50.0; 
+//     // float speed=0.0;
+//     float movingY = gl_FragCoord.y - (u_InversionShift * speed);
+//
+//     vec4 bufferAData = texture(worldColorTexture, TexCoords);
+//     vec3 invertedColor = vec3(1.0) - bufferAData.rgb;
+//
+//     float pattern = mod(floor(movingY / lineWidth), 2.0);
+//
+//
+//     if (pattern < 0.5) {
+//         FragColor = vec4(invertedColor, bufferAData.a); 
+//     } else {
+//         FragColor = bufferAData;
+//     }
+//
 
 
     // if (TexCoords.x >= u_InversionBounds.x && TexCoords.x <= u_InversionBounds.z && 

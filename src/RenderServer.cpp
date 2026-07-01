@@ -54,9 +54,9 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
 
   // glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, worldFBO);
-  // glEnable(GL_DEPTH_TEST); // test
-  glDisable(GL_DEPTH_TEST);
-  // glDepthMask(GL_TRUE); // mask
+  glEnable(GL_DEPTH_TEST); // test
+  // glDisable(GL_DEPTH_TEST);
+  glDepthMask(GL_TRUE); // mask
   glDisable(GL_BLEND); // blend
   //trial
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -798,9 +798,23 @@ void RenderServer::ClearQueues(){
 }
 
 void RenderServer::setProjectionUniform(GLuint programID){
-  glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1.0f, 1.0f);
+  // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1000.0f, 1000.0f);
+  // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1.0f, 1.0f);
+  // 2. The Camera Position (Where am I, What am I looking at, Which way is Up?)
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)RSwidth / (float)RSheight, 0.1f, 1000.0f);
+  glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 100.0f); 
+  glm::vec3 cameraLook  = glm::vec3(0.0f, 0.0f, 0.0f); 
+  glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::mat4 view = glm::lookAt(cameraPos, cameraLook, cameraUp);
   GLint locProj = glGetUniformLocation(programID, "u_Projection");
   if(locProj != -1) {
       glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
   }
+    
+  GLint locCam = glGetUniformLocation(programID, "u_View");
+
+  if(locCam != -1) {
+      glUniformMatrix4fv(locCam, 1, GL_FALSE, glm::value_ptr(view));
+  }
+
 }

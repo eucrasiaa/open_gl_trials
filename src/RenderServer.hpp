@@ -51,8 +51,6 @@ class RenderServer {
 
     // |||||  SDL2 Items  |||||
     // ||||||||||||||||||||||||
-    int RSwidth=0;
-    int RSheight=0;
 
     SDL_Window* window=nullptr;
     SDL_GLContext glContext=nullptr;
@@ -129,6 +127,8 @@ class RenderServer {
 
   public:
 
+    int RSwidth=0;
+    int RSheight=0;
     
     // Instance VBO 
     GLuint gInstanceVBO = 0;
