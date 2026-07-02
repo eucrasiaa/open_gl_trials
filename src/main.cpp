@@ -1,10 +1,26 @@
 
 // #define RENDERSERVER_DEBUG
 
+#include <filesystem>
+#if defined(_WIN32)
+  // #define NOMINMAX
+  // #define WIN32_LEAN_AND_MEAN
+  // #include <windows.h>
+  #include <libloaderapi.h>
+  // #undef OPAQUE 
+  // #undef TRANSPARENT
+#elif defined(__linux__)
+  #include <unistd.h>
+  #include <limits.h>
+#elif defined(__APPLE__)
+    #include <mach-o/dyld.h> 
+#endif
+
 #include "MeshNode.hpp"
 #include "PlayerElem.hpp"
 #include "PlayerElem_alt.hpp"
 #include "RenderItem.hpp"
+#include <fstream>
 #define SDL_MAIN_HANDLED
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
@@ -14,9 +30,37 @@
 
 #include "SpriteElement.hpp"
 
-int main(int argc, char* argv[]) {
-  SDL_SetMainReady();
+static std::filesystem::path EXECUTABLE_DIR;
 
+int main(int argc, char* argv[]) {
+  //prelim handling stuff 
+  
+
+#if defined(_WIN32)
+  wchar_t buffer[MAX_PATH];
+  DWORD length = GetModuleFileNameW(NULL, buffer, MAX_PATH);
+  if (length == 0) {
+      throw std::runtime_error("Windows: Failed to retrieve executable path.");
+  }
+  std::wcout<<"Windows: "<<buffer<<std::endl;
+  EXECUTABLE_DIR = std::filesystem::path(buffer).parent_path();
+#elif defined(__linux__)
+  char buffer[PATH_MAX];
+  ssize_t length = readlink("/proc/self/exe", buffer, PATH_MAX);
+  if (length == -1) {
+    throw std::runtime_error("Linux: Failed to read executable symlink.");
+  }
+  EXECUTABLE_DIR = std::filesystem::path(std::string(buffer)).parent_path();
+#elif defined(__APPLE__)
+  uint32_t size = 0;
+  _NSGetExecutablePath(nullptr, &size); 
+  char buffer[size];
+  if (_NSGetExecutablePath(buffer, &size) != 0) {
+      throw std::runtime_error("macOS: Failed to retrieve executable path.");
+  }
+  EXECUTABLE_DIR = std::filesystem::weakly_canonical(std::filesystem::path(buffer)).parent_path();
+#endif 
+  SDL_SetMainReady();
   if (!Engine::Get().init("OpenGL Engine Layout", 1280, 720)) {
     return 1;
   }
@@ -69,7 +113,7 @@ int main(int argc, char* argv[]) {
   mySphere->position = Vec3(-30.5f,0.0f,0.0f);
   mySphere->scale = Vec3(1.0f, 1.0f,1.0f);
   // mySphere->scale = Vec3(50.0f, 50.0f,1.0f);
-  
+
 
   // MeshNode* wolf = new MeshNode();
   // wolf->init("../assets/meshes/WOLF.obj", "../assets/textures/WOLF.png", RenderItemLayer::OPAQUE);
@@ -98,19 +142,19 @@ int main(int argc, char* argv[]) {
   Engine::Get().addNode(myCube);
   Engine::Get().addNode(myTriangle);
   Engine::Get().addNode(mySphere);
-    background->scale  = Vec3(16.0f, 9.0f, 1.0f);
-    background->scale*=2.0f;
-player2->scale     = Vec3(2.0f, 2.0f, 1.0f);
-player->scale      = Vec3(4.0f, 4.0f, 4.0f);
-myCube->scale      = Vec3(1.0f, 1.0f, 1.0f);
-myTriangle->scale  = Vec3(1.0f, 1.0f, 1.0f);
-mySphere->scale    = Vec3(1.0f, 1.0f, 1.0f);
+  background->scale  = Vec3(16.0f, 9.0f, 1.0f);
+  background->scale*=2.0f;
+  player2->scale     = Vec3(2.0f, 2.0f, 1.0f);
+  player->scale      = Vec3(4.0f, 4.0f, 4.0f);
+  myCube->scale      = Vec3(1.0f, 1.0f, 1.0f);
+  myTriangle->scale  = Vec3(1.0f, 1.0f, 1.0f);
+  mySphere->scale    = Vec3(1.0f, 1.0f, 1.0f);
 
-myCube->scale    *=5.0f;
-myTriangle->scale*=5.0f;
-mySphere->scale  *=5.0f;
+  myCube->scale    *=5.0f;
+  myTriangle->scale*=5.0f;
+  mySphere->scale  *=5.0f;
 
-// for (auto& node : Engine::Get().sceneNodes) { 
+  // for (auto& node : Engine::Get().sceneNodes) { 
   //   node->scale*=5;
   // }
   Engine::Get().run();
