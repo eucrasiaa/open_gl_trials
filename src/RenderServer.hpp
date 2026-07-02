@@ -135,8 +135,8 @@ class RenderServer {
     // ||||||||||||||||||||||||
     bool only2D = true;
     bool doWPP = true;
-    bool doSPP = true;
-
+    bool doSPP = false;
+    std::string PP = "WorldPostProcess";
 
     static RenderServer& Get() {
       static RenderServer instance;

@@ -24,7 +24,8 @@ class Engine {
     double timeScale = 1.0;
 
     struct InputState inputState;
-
+    void ShaderChange(int direction);
+std::vector<std::string> Shaders = {};
     void addNode(Node* node);
 
     std::vector<Node*> sceneNodes;

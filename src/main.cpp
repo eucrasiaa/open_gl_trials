@@ -71,14 +71,35 @@ int main(int argc, char* argv[]) {
   // mySphere->scale = Vec3(50.0f, 50.0f,1.0f);
   
 
-  
+  // MeshNode* wolf = new MeshNode();
+  // wolf->init("../assets/meshes/WOLF.obj", "../assets/textures/WOLF.png", RenderItemLayer::OPAQUE);
+  // wolf->position = Vec3(-30.5f,40.0f,0.0f);
+  // wolf->scale = Vec3(1.0f, 1.0f,1.0f);
+  // wolf->scale *=15.0f;
+  //Engine::Get().addNode(wolf);
+  //
+  // MeshNode* Horse = new MeshNode();
+  // Horse->init("../assets/meshes/Horse.obj", "../assets/textures/Horse.jpg", RenderItemLayer::OPAQUE);
+  // Horse->position = Vec3(30.5f,40.0f,0.0f);
+  // Horse->scale = Vec3(1.0f, 1.0f,1.0f);
+  // Horse->scale*=0.01f;
+  // Engine::Get().addNode(Horse);
+  //
+  //
+  // MeshNode* Fish = new MeshNode();
+  // Fish->init("../assets/meshes/Fish.obj", "../assets/textures/Fish.png", RenderItemLayer::OPAQUE);
+  // Fish->position = Vec3(0.5f,40.0f,0.0f);
+  // Fish->scale = Vec3(1.0f, 1.0f,1.0f);
+  // Fish->scale*=4.0f;
+  // Engine::Get().addNode(Fish);
+
   Engine::Get().addNode(player2);
   Engine::Get().addNode(background);
   Engine::Get().addNode(myCube);
   Engine::Get().addNode(myTriangle);
   Engine::Get().addNode(mySphere);
     background->scale  = Vec3(16.0f, 9.0f, 1.0f);
-    background->scale*=5.0f;
+    background->scale*=2.0f;
 player2->scale     = Vec3(2.0f, 2.0f, 1.0f);
 player->scale      = Vec3(4.0f, 4.0f, 4.0f);
 myCube->scale      = Vec3(1.0f, 1.0f, 1.0f);

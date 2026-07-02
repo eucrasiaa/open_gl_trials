@@ -1,4 +1,5 @@
 #include "RenderServer.hpp"
+#include "Engine.hpp"
 #include "RenderItem.hpp"
 #include "glad/glad.h"
 #include <SDL_stdinc.h>
@@ -124,8 +125,8 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
     glDisable(GL_DEPTH_TEST); 
     // glDepthMask(GL_FALSE); // shouldnt need reset but 
     glDisable(GL_BLEND);
-    
-    pickedPipeline = BindPipeline("WorldPostProcess");
+    pickedPipeline = BindPipeline(PP); 
+    // pickedPipeline = BindPipeline("WorldPostProcess");
     if (pickedPipeline == -1) return;
 
 
@@ -665,10 +666,24 @@ void RenderServer::InitPipelines(){
     { "Basic", "../assets/shaders/VertexFirst.vert", "../assets/shaders/FragmentFirst.frag" },
     { "MVP", "../assets/shaders/VertMVP.vert", "../assets/shaders/FragMVP.frag" },
     { "WorldPostProcess", "../assets/shaders/WorldPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
+    
+    { "Toon", "../assets/shaders/Toon.frag",  "../assets/shaders/PostProcess.vert"},  
+    { "Sobel", "../assets/shaders/Sobel.frag",  "../assets/shaders/PostProcess.vert"},  
+    { "Dither", "../assets/shaders/Dither.frag",  "../assets/shaders/PostProcess.vert"},  
+    { "Glitch", "../assets/shaders/Glitch.frag",  "../assets/shaders/PostProcess.vert"},  
     { "ScreenPostProcess", "../assets/shaders/ScreenPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
     // { "PostProcess", "assets/shaders/FullscreenQuad.vert", "assets/shaders/PostProcess.frag" },
     // { "ShadowMap", "assets/shaders/Shadow.vert", "assets/shaders/Shadow.frag" }
   };
+
+  Engine::Get().Shaders.push_back("Toon");
+  Engine::Get().Shaders.push_back("WorldPostProcess");
+  Engine::Get().Shaders.push_back("ScreenPostProcess");
+  
+  Engine::Get().Shaders.push_back("Sobel");
+  Engine::Get().Shaders.push_back("Dither");
+  Engine::Get().Shaders.push_back("Glitch");
+
 
   for (const auto& config : configs) {
     CreateGraphicsPipeline(config);

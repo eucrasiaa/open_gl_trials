@@ -12,6 +12,20 @@ bool Engine::init(const char* title, int width, int height) {
   return true;
 }
 
+
+void Engine::ShaderChange(int direction) {
+    int totalRes = Shaders.size();
+    
+    currentResIndex = (currentResIndex + direction) % totalRes;
+    
+    if (currentResIndex < 0) {
+        currentResIndex += totalRes;
+    }
+
+    RenderServer::Get().PP = Shaders[currentResIndex];
+
+    std::cout << "Shader changed to: " << Shaders[currentResIndex] << std::endl;
+}
 void Engine::handleEvents() {
   SDL_Event event;
   while (SDL_PollEvent(&event) != 0) {
@@ -21,12 +35,14 @@ void Engine::handleEvents() {
     }
     else if (event.type == SDL_KEYDOWN) {
       switch (event.key.keysym.sym) {
-        // case SDLK_LEFT:
-        //   changeResolution(-1); // Cycle down
-        //   break;
-        // case SDLK_RIGHT:
-        //   changeResolution(1);  // Cycle up
-        //   break;
+        case SDLK_LEFT:
+          ShaderChange(-1); // Cycle down
+          // changeResolution(-1); // Cycle down
+          break;
+        case SDLK_RIGHT:
+          ShaderChange(1);  // Cycle up
+          // changeResolution(1);  // Cycle up
+          break;
         case SDLK_SPACE:
           inputState.ToggleMouse = !inputState.ToggleMouse;
           SDL_SetRelativeMouseMode(inputState.ToggleMouse? SDL_TRUE : SDL_FALSE);
