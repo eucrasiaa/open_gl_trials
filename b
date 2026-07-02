@@ -48,11 +48,12 @@ case "$1" in
         ;;
     r|run)
         # cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=OFF -DBACKEND=${BACKEND_CHOICE}
-        cmake --build . --target run
+        cmake --build . #--target run
+        exec ./${PROJECT_NAME} 
         # ./${PROJECT_NAME}
         ;;
     rc)
-        ./${PROJECT_NAME}
+        exec ./${PROJECT_NAME}
         ;;
     gdb)
       gdb ./${PROJECT_NAME}

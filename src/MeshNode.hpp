@@ -23,7 +23,9 @@ public:
         this->indexCount = mesh.indexCount;
     }
     void update(double dt) override {
+#ifdef NODE_DEBUF
       std::cout<<"MeshUpdateTick :"<< vaoID<<std::endl;
+#endif
       this->rotation.x += 45.0f * dt;    
       this->rotation.y += 45.0f * dt;
       // this->rotation.z += 45.0f * dt;

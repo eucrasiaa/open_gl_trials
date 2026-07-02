@@ -18,8 +18,10 @@ class RenderNode : public Node {
     }
 
     void render(const glm::mat4 &parentTransform, bool parentIsDirty) override {
+#ifdef NODE_DEBUF
       std::cout<<"RenderTick on RenderNode, id = "<<textureID<<std::endl;
-        computeTransforms(parentTransform, parentIsDirty);
+#endif
+      computeTransforms(parentTransform, parentIsDirty);
       RenderInstance instance;
       instance.globalTransform = this->globalTransform;
       instance.textureID = this->textureID;

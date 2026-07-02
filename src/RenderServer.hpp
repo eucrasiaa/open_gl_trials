@@ -54,8 +54,7 @@ class RenderServer {
 
     SDL_Window* window=nullptr;
     SDL_GLContext glContext=nullptr;
-
-
+    
 
 
     // ||||| OpenGL Items |||||
@@ -156,6 +155,11 @@ class RenderServer {
     // regestering
     void SubmitInstance(const RenderInstance& instance);
     void ClearQueues();
+
+    // debug camera here:
+    glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 100.0f); 
+    glm::vec3 cameraLook  = glm::vec3(0.0f, 0.0f, 0.0f); 
+    glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
 
     // std::vector<Vertex> batchBuffer; 

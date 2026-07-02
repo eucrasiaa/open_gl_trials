@@ -142,7 +142,7 @@ endif()
 
 # This tells the compiler/linker to look for standard "main" instead of "WinMain"
 if(MINGW)
-  # target_link_options(${PROJECT_NAME} PRIVATE "-static-libgcc" "-static-libstdc++" "-static")
+  target_link_options(${PROJECT_NAME} PRIVATE "-static-libgcc" "-static-libstdc++" "-static")
     target_link_options(${PROJECT_NAME} PRIVATE "-mconsole")
 # endif()
     #
@@ -254,11 +254,11 @@ endif()
 #     add_dependencies(asan_run ${PROJECT_NAME})
 # endif()
 # dll stuff
-# if(WIN32)
-#     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#             $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-#             $<TARGET_FILE_DIR:${PROJECT_NAME}>
-#         COMMAND_EXPAND_LISTS
-#     )
-# endif()
+if(WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMAND_EXPAND_LISTS
+    )
+endif()

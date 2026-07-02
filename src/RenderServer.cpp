@@ -11,6 +11,7 @@
 #include "TextureManager.hpp"
 
 
+
 int RenderServer::BindPipeline(const std::string& name) {
   auto it = gPipelinePrograms.find(name);
   if (it != gPipelinePrograms.end()) {
@@ -248,7 +249,9 @@ void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
   
   // bind 2d VAO here
   glBindVertexArray(gVertexArrayObject);
+#ifdef RENDERSERVER_DEBUG
   std::cout<<"hit renderQueue: sizeof "<<queue.size()<<std::endl;
+#endif
   for (size_t i = 0; i < queue.size(); ++i) {
     const auto& instance = queue[i];
     GLuint instanceVAO = instance.vaoID == 0 ? gVertexArrayObject : instance.vaoID;
@@ -277,10 +280,13 @@ void RenderServer::FlushInstancedBatch2d(GLuint textureID, const std::vector<glm
 }
 #include <glm/gtx/io.hpp>
 void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices) {
-  std::cout<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
+  
+#ifdef RENDERSERVER_DEBUG
+  std::cerr<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
     for (const auto& mat : matrices) {
         std::cout << mat << std::endl;
     }
+#endif
   glBindVertexArray(vaoID); // Now it's dynamic!
   // texture bind:
   glActiveTexture(GL_TEXTURE0);
@@ -304,13 +310,15 @@ bool RenderServer::init(const char* title, int width, int height){
 
 
 
+#ifdef RENDERSERVER_DEBUG
   std::cout<<gVertexArrayObject<< " " << gVertexBufferObject << " " << std::endl;
+#endif
   // // Set core OpenGL context parameters before window generation
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   // stability
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG | SDL_GL_CONTEXT_DEBUG_FLAG);
   // Color! Framebuff fun
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1); SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24); SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8); SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
   // anti alias
@@ -319,8 +327,8 @@ bool RenderServer::init(const char* title, int width, int height){
 
   // debug
   // glGetError();
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+  // SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+  // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
   //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
   window = SDL_CreateWindow(title, 
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
@@ -340,6 +348,7 @@ bool RenderServer::init(const char* title, int width, int height){
 
   }
 
+  // SDL_SetRelativeMouseMode(SDL_TRUE);
   //init GLAD
   if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
     std::cerr<<"Failed to initialize Glad: most recent SDL Err: %s\n"<<SDL_GetError()<<"\n";
@@ -356,6 +365,8 @@ bool RenderServer::init(const char* title, int width, int height){
     "\n-Renderer "        << glGetString(GL_RENDERER) <<
     "\n-Version "         << glGetString(GL_VERSION)  <<
     "\n-Shading Language "<< glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+
+
   // glBindBuffer()
   // glBindBufer
 
@@ -386,7 +397,6 @@ void APIENTRY RenderServer::glDebugOutput(GLenum source,
 
     std::cout << "---------------" << std::endl;
     std::cout << "Debug message (" << id << "): " << message << std::endl;
-
     switch (source) {
         case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
         case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
@@ -710,7 +720,9 @@ void RenderServer::CreateGraphicsPipeline(const PipelineConfig& config){
   // Save the finished pipeline into our server's map
   Pipeline pipeline;
   pipeline.programID = programObject;
-  std::cout<<"just loaded pipeline named: "<<config.name<<std::endl;
+  #ifdef RENDERSERVER_DEBUG
+    std::cout<<"just loaded pipeline named: "<<config.name<<std::endl;
+  #endif
   RenderServer::gPipelinePrograms[config.name] = pipeline;
 
 }
@@ -800,11 +812,10 @@ void RenderServer::ClearQueues(){
 void RenderServer::setProjectionUniform(GLuint programID){
   // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1000.0f, 1000.0f);
   // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1.0f, 1.0f);
-  // 2. The Camera Position (Where am I, What am I looking at, Which way is Up?)
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)RSwidth / (float)RSheight, 0.1f, 1000.0f);
-  glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 100.0f); 
-  glm::vec3 cameraLook  = glm::vec3(0.0f, 0.0f, 0.0f); 
-  glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
+  // glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 100.0f); 
+  // glm::vec3 cameraLook  = glm::vec3(0.0f, 0.0f, 0.0f); 
+  // glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
   glm::mat4 view = glm::lookAt(cameraPos, cameraLook, cameraUp);
   GLint locProj = glGetUniformLocation(programID, "u_Projection");
   if(locProj != -1) {

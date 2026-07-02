@@ -21,17 +21,71 @@ void Engine::handleEvents() {
     }
     else if (event.type == SDL_KEYDOWN) {
       switch (event.key.keysym.sym) {
-        case SDLK_LEFT:
-          changeResolution(-1); // Cycle down
-          break;
-        case SDLK_RIGHT:
-          changeResolution(1);  // Cycle up
+        // case SDLK_LEFT:
+        //   changeResolution(-1); // Cycle down
+        //   break;
+        // case SDLK_RIGHT:
+        //   changeResolution(1);  // Cycle up
+        //   break;
+        case SDLK_SPACE:
+          inputState.ToggleMouse = !inputState.ToggleMouse;
+          SDL_SetRelativeMouseMode(inputState.ToggleMouse? SDL_TRUE : SDL_FALSE);
           break;
       }
     }
+    else if (inputState.ToggleMouse){ 
+      if(event.type == SDL_MOUSEMOTION) {
+        yaw   += event.motion.xrel * mouseSensitivity;
+        pitch -= event.motion.yrel * mouseSensitivity; 
+        if (pitch > 89.0f)  pitch = 89.0f;
+        if (pitch < -89.0f) pitch = -89.0f;
+      }
+    }
   }
+  MoveCamera();
 }
+void Engine::MoveCamera(){
+  
+      glm::vec3 cameraPos = RenderServer::Get().cameraPos;
+      
+      glm::vec3 cameraLook = RenderServer::Get().cameraLook;
 
+      glm::vec3 cameraUp = RenderServer::Get().cameraUp;
+      glm::vec3 front;
+      front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+      front.y = sin(glm::radians(pitch));
+      front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+      front = glm::normalize(front);
+      glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f)));
+      const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
+      if (currentKeyStates[SDL_SCANCODE_W]) {
+        cameraPos += front * movementSpeed;
+      }
+      if (currentKeyStates[SDL_SCANCODE_S]) {
+        cameraPos -= front * movementSpeed;
+      }
+      if (currentKeyStates[SDL_SCANCODE_A]) {
+        cameraPos -= right * movementSpeed; 
+      }
+      if (currentKeyStates[SDL_SCANCODE_D]) {
+        cameraPos += right * movementSpeed; 
+      }
+      if (currentKeyStates[SDL_SCANCODE_Q]) {
+        cameraPos.y += movementSpeed;
+      }
+
+      if (currentKeyStates[SDL_SCANCODE_E]) {
+        cameraPos.y -= movementSpeed; 
+      }
+
+      cameraLook = cameraPos + front; 
+      cameraUp   = glm::normalize(glm::cross(right, front));
+
+      RenderServer::Get().cameraPos  = cameraPos;
+      RenderServer::Get().cameraLook = cameraLook;
+      RenderServer::Get().cameraUp   = cameraUp;
+
+}
 void Engine::changeResolution(int direction) {
   int newIndex = currentResIndex + direction;
 
@@ -89,6 +143,9 @@ void Engine::run() {
     render(elapsedTime); // loads renderServer if needed
 
     RenderServer::Get().render(elapsedTime);
+    #ifdef DEBUG_WINDOW
+      RenderServer::Get().DrawDebug();
+    #endif
   }
 }
 void Engine::addNode(Node* node) {

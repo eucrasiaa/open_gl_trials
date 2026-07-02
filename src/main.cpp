@@ -1,3 +1,6 @@
+
+// #define RENDERSERVER_DEBUG
+
 #include "MeshNode.hpp"
 #include "PlayerElem.hpp"
 #include "PlayerElem_alt.hpp"
@@ -10,8 +13,6 @@
 #include "Engine.hpp"
 
 #include "SpriteElement.hpp"
-
-
 
 int main(int argc, char* argv[]) {
   SDL_SetMainReady();
@@ -76,7 +77,6 @@ int main(int argc, char* argv[]) {
   Engine::Get().addNode(myCube);
   Engine::Get().addNode(myTriangle);
   Engine::Get().addNode(mySphere);
-
     background->scale  = Vec3(16.0f, 9.0f, 1.0f);
     background->scale*=5.0f;
 player2->scale     = Vec3(2.0f, 2.0f, 1.0f);

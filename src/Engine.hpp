@@ -4,6 +4,9 @@
 #include "RenderServer.hpp"
 #include "Node.hpp"
 
+struct InputState{
+  bool ToggleMouse = false;
+};
 
 
 // RenderServer *Engine::renderServer = nullptr;
@@ -20,7 +23,7 @@ class Engine {
     bool isRunning = false;
     double timeScale = 1.0;
 
-
+    struct InputState inputState;
 
     void addNode(Node* node);
 
@@ -55,4 +58,12 @@ class Engine {
     ~Engine() { shutdown(); }
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
+
+    //debug stuff 
+    float yaw   = -90.0f; 
+    float pitch =   0.0f; 
+    float mouseSensitivity = 0.1f;
+    float movementSpeed    = 0.2f; 
+    void MoveCamera();
+
 };
