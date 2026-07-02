@@ -5,3 +5,5 @@ CMakeFiles/
 srcGraph.py
 source_graph.dot
 detailed_source_graph.png
+
+assets/*
