@@ -17,7 +17,7 @@ struct PipelineConfig {
   std::string fragmentPath;
 };
 
-
+enum class RenderPassType { World, UI_Flat, UI_3D };
 const size_t MAX_SPRITE_COUNT = 10000;
 const size_t MAX_VERTEX_COUNT = MAX_SPRITE_COUNT * 4;
 
@@ -87,7 +87,8 @@ class RenderServer {
     // buckets rework
     std::vector<RenderInstance> opaqueQueue;
     std::vector<RenderInstance> transparentQueue;
-    std::vector<RenderInstance> uiQueue;
+    std::vector<RenderInstance> ui_3d_Queue;
+    std::vector<RenderInstance> ui_2d_Queue;
     std::unordered_map<RenderItemID, RenderInstance*> instanceDirectory;
     RenderItemID NextID = 0;    
 
@@ -120,7 +121,7 @@ class RenderServer {
     void FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices);
     void FlushInstancedBatch2d(GLuint textureID, const std::vector<glm::mat4>& matrices);
   
-    void setProjectionUniform(GLuint programID, unsigned int BonusCase =0);
+    void setProjectionUniform(GLuint programID, RenderPassType passType=RenderPassType::World);
 
     // class oop stuff
     RenderServer() = default;
@@ -142,7 +143,7 @@ class RenderServer {
     // |||||  MiscConfig  |||||
     // ||||||||||||||||||||||||
     bool only2D = true;
-    bool doWPP = false;
+    bool doWPP = true;
     bool doSPP = false;
     std::string PP = "WorldPostProcess";
 

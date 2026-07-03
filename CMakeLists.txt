@@ -149,6 +149,7 @@ if(MINGW)
     #     if(MINGW OR CYGWIN)
         target_link_libraries(${PROJECT_NAME} PRIVATE 
             setupapi
+            stdc++exp
             SDL2main
             winmm
             version

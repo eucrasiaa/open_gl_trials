@@ -26,26 +26,26 @@ int RenderServer::BindPipeline(const std::string& name) {
 
 
 void RenderServer::render(double dt) {
-  
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
+
+  glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
 
   // sort bucket by texture 
   // std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
   //       return a.textureID < b.textureID;
   //   });
 
-std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
-    if (a.vaoID != b.vaoID) {
-        return a.vaoID < b.vaoID; // mesh types
-    }
-    return a.textureID < b.textureID; // cubes by texture
-});
+  std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
+      if (a.vaoID != b.vaoID) {
+      return a.vaoID < b.vaoID; // mesh types
+      }
+      return a.textureID < b.textureID; // cubes by texture
+      });
   // 2. sort transparent by camera dist? see notes
   // TODO: eventually tie to camera pos i think
   std::sort(transparentQueue.begin(), transparentQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
-    // z translation, Highest Z -> Lowest Z (back to front) 
-    return a.globalTransform[3].z < b.globalTransform[3].z; 
-  });
+      // z translation, Highest Z -> Lowest Z (back to front) 
+      return a.globalTransform[3].z < b.globalTransform[3].z; 
+      });
 
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // |-|-|-|             Opaque Layer Pass               |-|-|-|
@@ -57,13 +57,12 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   // glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, worldFBO);
   glEnable(GL_DEPTH_TEST); // test
-  // glDisable(GL_DEPTH_TEST);
+                           // glDisable(GL_DEPTH_TEST);
   glDepthMask(GL_TRUE); // mask
   glDisable(GL_BLEND); // blend
-  //trial
+                       //trial
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
 
 
   int pickedPipeline = BindPipeline("MVP"); 
@@ -73,9 +72,11 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   // uniforms here!
   setProjectionUniform(pickedPipeline);
 
+
+
   GLint locTex = glGetUniformLocation(pickedPipeline, "u_Texture"); 
   if (locTex != -1) {
-      glUniform1i(locTex, 0); // Tell the sampler to read from GL_TEXTURE0
+    glUniform1i(locTex, 0); // Tell the sampler to read from GL_TEXTURE0
   }
 
   // if(!opaqueQueue.empty() ){
@@ -83,8 +84,13 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   //
   // }
   // camera matrix would go in here
-  RenderQueue(opaqueQueue);
 
+  GLint locThick = glGetUniformLocation(pickedPipeline, "u_Thick");
+  if (locThick !=-1){
+    glUniform1f(locThick,0.5);
+  }
+
+  RenderQueue(opaqueQueue);
   // SDL_GL_SwapWindow(window);
   // ClearQueues();
   // return;
@@ -96,13 +102,12 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // uses: worldFramebuffer, Blend, Depth Test 
   // doesnt: No Depth Mask Write 
-  
-  
+
+
   // frame buffer + depth test still bound.
   glDepthMask(GL_FALSE); // mask
   glEnable(GL_BLEND); // blend
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
   pickedPipeline = BindPipeline("MVP"); 
   if (pickedPipeline == -1) return;
 
@@ -110,12 +115,14 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   setProjectionUniform(pickedPipeline);
   locTex = glGetUniformLocation(pickedPipeline, "u_Texture"); 
   if (locTex != -1) {
-      glUniform1i(locTex, 0); 
+    glUniform1i(locTex, 0); 
   }
   RenderQueue(transparentQueue); 
 
 
-  
+
+
+
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // |-|-|-|          Post-Process World Pass             |-|-|-|
   // |-|-|-|    Needs: postFBO, World Color Texture       |-|-|-|
@@ -139,7 +146,7 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
       glUniform1f(boundsLoc, static_cast<float>(dt));  
       // glUniform4f(boundsLoc, minX, minY, maxX, maxY);
     }
- 
+
     // float minX = 0.4f;
     // float minY = 0.4f;
     // float maxX = 0.6f;
@@ -170,15 +177,15 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
     // glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // should be set above
     glBindFramebuffer(GL_READ_FRAMEBUFFER, worldFBO); 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postFBO);
-    
+
     glDisable(GL_SCISSOR_TEST); 
-    
+
     glBlitFramebuffer(
-      0, 0, RSwidth, RSheight,
-      0, 0, RSwidth, RSheight, 
-      GL_COLOR_BUFFER_BIT,
-      GL_NEAREST
-    );
+        0, 0, RSwidth, RSheight,
+        0, 0, RSwidth, RSheight, 
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+        );
   }
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // |-|-|-|               UI Overlay Pass               |-|-|-|
@@ -187,25 +194,48 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   // |-|-|-|              Doesnt Use: Depth Mask Write  |-|-|-|
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // keep the postFBO bound cause we just write over it  
-  
+
+
+
+  int gizmoSize = 150;
+  int margin = 20;
+
+  GLint cPos = glGetUniformLocation(pickedPipeline, "u_CameraPos"); 
+  if (cPos != -1) {
+    glUniform3f(cPos, cameraPos.x,cameraPos.y,cameraPos.z); 
+  }
+  locTex = glGetUniformLocation(pickedPipeline, "u_Texture"); 
+  if (locTex != -1) {
+    glUniform1i(locTex, 0); 
+  }
   glBindFramebuffer(GL_FRAMEBUFFER, postFBO); // incase wpp skipped, ensure
   glDisable(GL_DEPTH_TEST); // UI ignores depth  no need to reset
   glEnable(GL_BLEND); // it does need transparency. probably?
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+  // pickedPipeline = BindPipeline("UI");
+  // if (pickedPipeline == -1) return;
+
+  //!!!!!!! 2d Pass 
+  setProjectionUniform(pickedPipeline,RenderPassType::UI_Flat);
+  // if(!ui_2d_Queue.empty()){
+  //   std::cout<<"pushing"<<ui_2d_Queue[0]<<std::endl;
+  // }
+  RenderQueue(ui_2d_Queue);
+
+
+  // !!!!! 3D PASS!!!
   pickedPipeline = BindPipeline("UI");
+
+  glEnable(GL_DEPTH_TEST); // UI ignores depth  no need to reset
+                           //
   if (pickedPipeline == -1) return;
+  setProjectionUniform(pickedPipeline,RenderPassType::UI_3D);
+  // if(!ui_3d_Queue.empty()){
+  //   std::cout<<"pushing"<<ui_3d_Queue[0]<<std::endl;
+  // }
+  RenderQueue(ui_3d_Queue); 
+  glViewport(0, 0, RSwidth, RSheight);
 
-  int gizmoSize = 150;
-  int margin = 20;
-  // glViewport(RSwidth - gizmoSize - margin, RSheight - gizmoSize - margin, gizmoSize, gizmoSize);
-
-  setProjectionUniform(pickedPipeline, 1);
-
-  if(!uiQueue.empty()){
-    std::cout<<"pushing"<<uiQueue[0]<<std::endl;
-  }
-  RenderQueue(uiQueue); 
-  // glViewport(0, 0, RSwidth, RSheight);
 
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // |-|-|-|          Post-Process Screen Pass           |-|-|-|
@@ -219,7 +249,7 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // bind directly to screen
     glClear(GL_COLOR_BUFFER_BIT); // doesnt need to clear depth
-    // glDisable(GL_DEPTH_TEST);  // should have stayed off so
+                                  // glDisable(GL_DEPTH_TEST);  // should have stayed off so
     glDisable(GL_BLEND);
 
     pickedPipeline = BindPipeline("ScreenPostProcess");
@@ -236,14 +266,14 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
     glDisable(GL_SCISSOR_TEST);
     glClear(GL_COLOR_BUFFER_BIT); 
     glBlitFramebuffer(
-      0, 0, RSwidth, RSheight,
-      0, 0, RSwidth, RSheight, 
-      GL_COLOR_BUFFER_BIT,
-      GL_NEAREST
-    );
+        0, 0, RSwidth, RSheight,
+        0, 0, RSwidth, RSheight, 
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+        );
   }
 
-  
+
   SDL_GL_SwapWindow(window);
   ClearQueues();
 
@@ -257,28 +287,62 @@ void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
   GLuint currentIndexCount = queue[0].indexCount;
   // collect 
   std::vector<glm::mat4> batchMatrices;
-  
+
+
+  bool currentUseCustomViewport = queue[0].useCustomViewport;
+  int currentVpX = queue[0].vpX;
+  int currentVpY = queue[0].vpY;
+  int currentVpWidth = queue[0].vpWidth;
+  int currentVpHeight = queue[0].vpHeight;
+
+  if (currentUseCustomViewport) {
+    glViewport(currentVpX, currentVpY, currentVpWidth, currentVpHeight);
+  } else {
+    glViewport(0, 0, RSwidth, RSheight);
+  }
   // bind 2d VAO here
-  glBindVertexArray(gVertexArrayObject);
+  // glBindVertexArray(gVertexArrayObject);
 #ifdef RENDERSERVER_DEBUG_HEAVY
   std::cout<<"hit renderQueue: sizeof "<<queue.size()<<std::endl;
 #endif
   for (size_t i = 0; i < queue.size(); ++i) {
     const auto& instance = queue[i];
     GLuint instanceVAO = instance.vaoID == 0 ? gVertexArrayObject : instance.vaoID;
-    if (instanceVAO != currentVAO || instance.textureID != currentTexture) {
-            FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
-            
-            currentVAO = instanceVAO;
-            currentTexture = instance.textureID;
-            currentIndexCount = instance.indexCount;
-            batchMatrices.clear();
-        }
-        batchMatrices.push_back(instance.globalTransform);
+    bool vaoChanged     = (instanceVAO != currentVAO);
+    bool textureChanged = (instance.textureID != currentTexture);
+    bool viewportChanged = (instance.useCustomViewport != currentUseCustomViewport) ||
+      (instance.useCustomViewport && 
+       (instance.vpX != currentVpX || instance.vpY != currentVpY || 
+        instance.vpWidth != currentVpWidth || instance.vpHeight != currentVpHeight));
+
+    if (vaoChanged || textureChanged || viewportChanged) {
+
+      if (!batchMatrices.empty()) {
+        FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+        batchMatrices.clear();
+      }
+      currentVAO = instanceVAO;
+      currentTexture = instance.textureID;
+      currentIndexCount = instance.indexCount;
+      currentUseCustomViewport = instance.useCustomViewport;
+      currentVpX = instance.vpX;
+      currentVpY = instance.vpY;
+      currentVpWidth = instance.vpWidth;
+      currentVpHeight = instance.vpHeight;
+
+      if (currentUseCustomViewport) {
+        glViewport(currentVpX, currentVpY, currentVpWidth, currentVpHeight);
+      } else {
+        glViewport(0, 0, RSwidth, RSheight);
+      }
+    }
+    // batchMatrices.push_back(instance.globalTransform);
     batchMatrices.push_back(instance.globalTransform);
     // batchMatrices.push_back(instance.globalTransform);
   }
-  FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+  if (!batchMatrices.empty()) {
+    FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+  }
   // FlushInstancedBatch2d(currentTexture, batchMatrices);
   //FlushInstancedBatch(currentTexture, batchMatrices);
   glBindVertexArray(0);
@@ -286,28 +350,30 @@ void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
 
 
 void RenderServer::FlushInstancedBatch2d(GLuint textureID, const std::vector<glm::mat4>& matrices){
-  
+
   FlushInstancedBatch(gVertexArrayObject, textureID, 6, matrices);
 }
 #include <glm/gtx/io.hpp>
 void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices) {
-  
+
 #ifdef RENDERSERVER_DEBUG_HEAVY
   std::cerr<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
-    for (const auto& mat : matrices) {
-        std::cout << mat << std::endl;
-    }
+  for (const auto& mat : matrices) {
+    std::cout << mat << std::endl;
+  }
 #endif
+
+
   glBindVertexArray(vaoID); // Now it's dynamic!
-  // texture bind:
+                            // texture bind:
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, textureID);
-  
 
-   if (useLinearFilter) {
-      glBindSampler(0, linearSampler);  // Binds to Texture Unit 0
+
+  if (useLinearFilter) {
+    glBindSampler(0, linearSampler);  // Binds to Texture Unit 0
   } else {
-      glBindSampler(0, nearestSampler); // Binds to Texture Unit 0
+    glBindSampler(0, nearestSampler); // Binds to Texture Unit 0
   }
 
   glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
@@ -315,7 +381,9 @@ void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint in
 
   // Draw 'indexCount' instead of a hardcoded 6
   glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr, matrices.size());
-  
+
+
+
 }
 
 bool RenderServer::init(const char* title, int width, int height){
@@ -390,7 +458,7 @@ bool RenderServer::init(const char* title, int width, int height){
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  
+
   glEnable(GL_DEBUG_OUTPUT);
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Direct error feedback
   glDebugMessageCallback(glDebugOutput, nullptr);
@@ -406,44 +474,44 @@ bool RenderServer::init(const char* title, int width, int height){
 }
 
 void APIENTRY RenderServer::glDebugOutput(GLenum source, 
-                            GLenum type, 
-                            unsigned int id, 
-                            GLenum severity, 
-                            GLsizei length, 
-                            const char* message, 
-                            const void* userParam) 
+    GLenum type, 
+    unsigned int id, 
+    GLenum severity, 
+    GLsizei length, 
+    const char* message, 
+    const void* userParam) 
 {
-    if (id == 131169 || id == 131185 || id == 131204 || id == 131218) return;
+  if (id == 131169 || id == 131185 || id == 131204 || id == 131218) return;
 
-    std::cout << "---------------" << std::endl;
-    std::cout << "Debug message (" << id << "): " << message << std::endl;
-    switch (source) {
-        case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
-        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
-        case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
-        case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
-        case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
-        case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
-    } std::cout << std::endl;
-    switch (type) {
-        case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break; 
-        case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
-        case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
-        case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
-        case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
-        case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
-        case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
-    } std::cout << std::endl;
-    
-    switch (severity) {
-        case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
-        case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
-        case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
-        case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
-    } std::cout << std::endl;
-    std::cout << "---------------" << std::endl;
+  std::cout << "---------------" << std::endl;
+  std::cout << "Debug message (" << id << "): " << message << std::endl;
+  switch (source) {
+    case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+    case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+    case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+  } std::cout << std::endl;
+  switch (type) {
+    case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break; 
+    case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+    case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+    case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+    case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+    case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+  } std::cout << std::endl;
+
+  switch (severity) {
+    case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+    case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+    case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+  } std::cout << std::endl;
+  std::cout << "---------------" << std::endl;
 }
 
 
@@ -553,10 +621,10 @@ void RenderServer::VertexSpecification(){
 
   // static 1x1 buff for basic 
   std::vector<Vertex> quadVertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0.0f},
-        {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0.0f}, 
-        {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0.0f},
-        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, 0.0f}
+    {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.0f},
+    {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.0f}, 
+    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, 0.0f},
+    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, 0.0f}
   };
   std::vector<GLuint> quadIndices = {0, 1, 2, 2, 3, 0}; //0 1 2 for tri 1, 2 3 0 for tri2
 
@@ -579,7 +647,10 @@ void RenderServer::VertexSpecification(){
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
 
   glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
+  glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+  glEnableVertexAttribArray(4);
+  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
 
 
   // IBO 
@@ -595,13 +666,13 @@ void RenderServer::VertexSpecification(){
   glBufferData(GL_ARRAY_BUFFER, MAX_SPRITE_COUNT * sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
 
   std::size_t vec4Size = sizeof(glm::vec4);
-  
+
   for (int i = 0; i < 4; i++) {
-      GLuint attribLocation = 4 + i;
-      glEnableVertexAttribArray(attribLocation);
-      glVertexAttribPointer(attribLocation, 4, GL_FLOAT, GL_FALSE, 
-                            sizeof(glm::mat4), (void*)(i * vec4Size));
-      glVertexAttribDivisor(attribLocation, 1); 
+    GLuint attribLocation = 5 + i;
+    glEnableVertexAttribArray(attribLocation);
+    glVertexAttribPointer(attribLocation, 4, GL_FLOAT, GL_FALSE, 
+        sizeof(glm::mat4), (void*)(i * vec4Size));
+    glVertexAttribDivisor(attribLocation, 1); 
   }
 
   //unbindbind?
@@ -673,17 +744,17 @@ void RenderServer::FrameBufferInit(){
 }
 
 void RenderServer::InitSamplers() {
-    glGenSamplers(1, &linearSampler);
-    glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glGenSamplers(1, &linearSampler);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glGenSamplers(1, &nearestSampler);
-    glSamplerParameteri(nearestSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glSamplerParameteri(nearestSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glGenSamplers(1, &nearestSampler);
+  glSamplerParameteri(nearestSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glSamplerParameteri(nearestSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 
@@ -698,12 +769,16 @@ void RenderServer::InitPipelines(){
   // }
   std::vector<PipelineConfig> configs = {
     { "Basic", "../assets/shaders/VertexFirst.vert", "../assets/shaders/FragmentFirst.frag" },
+
+    { "Black", "../assets/shaders/VertMVP.vert", "../assets/shaders/FragmentFirst.frag" },
     { "MVP", "../assets/shaders/VertMVP.vert", "../assets/shaders/FragMVP.frag" },
 
-    { "UI", "../assets/shaders/VertUI.vert",  "../assets/shaders/FragMVP.frag"},  
+    //{ "UI", "../assets/shaders/VertUI.vert",  "../assets/shaders/FragMVP.frag"},  
+
+    { "UI", "../assets/shaders/VertUI.vert",  "../assets/shaders/FragUI.frag"},  
 
     { "WorldPostProcess", "../assets/shaders/WorldPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
-    
+
     { "Toon", "../assets/shaders/Toon.frag",  "../assets/shaders/PostProcess.vert"},  
     { "Sobel", "../assets/shaders/Sobel.frag",  "../assets/shaders/PostProcess.vert"},  
     { "Dither", "../assets/shaders/Dither.frag",  "../assets/shaders/PostProcess.vert"},  
@@ -716,7 +791,7 @@ void RenderServer::InitPipelines(){
   Engine::Get().Shaders.push_back("Toon");
   Engine::Get().Shaders.push_back("WorldPostProcess");
   Engine::Get().Shaders.push_back("ScreenPostProcess");
-  
+
   Engine::Get().Shaders.push_back("Sobel");
   Engine::Get().Shaders.push_back("Dither");
   Engine::Get().Shaders.push_back("Glitch");
@@ -775,9 +850,9 @@ void RenderServer::CreateGraphicsPipeline(const PipelineConfig& config){
   // Save the finished pipeline into our server's map
   Pipeline pipeline;
   pipeline.programID = programObject;
-  #ifdef RENDERSERVER_DEBUG
-    std::cout<<"just loaded pipeline named: "<<config.name<<std::endl;
-  #endif
+#ifdef RENDERSERVER_DEBUG
+  std::cout<<"just loaded pipeline named: "<<config.name<<std::endl;
+#endif
   RenderServer::gPipelinePrograms[config.name] = pipeline;
 
 }
@@ -803,9 +878,9 @@ GLenum RenderServer::GetShaderTypeFromExtension(const std::string& filePath) {
 }
 
 GLuint RenderServer::CompileShader(GLuint type, const std::string& source){
-  #ifdef RENDERSERVER_DEBUG 
-    std::cout<<"Compiling: "<<std::endl;
-  #endif
+#ifdef RENDERSERVER_DEBUG 
+  std::cout<<"Compiling: "<<std::endl;
+#endif
   //oh boy 
   GLuint shaderObject = 0;
   if(type==GL_VERTEX_SHADER){
@@ -854,7 +929,8 @@ void RenderServer::SubmitInstance(const RenderInstance& instance) {
   switch(instance.layer) {
     case RenderItemLayer::OPAQUE: opaqueQueue.push_back(instance); break;
     case RenderItemLayer::TRANSPARENT: transparentQueue.push_back(instance); break;
-    case RenderItemLayer::UI: uiQueue.push_back(instance); break;
+    case RenderItemLayer::UI_2D: ui_2d_Queue.push_back(instance); break;
+    case RenderItemLayer::UI_3D: ui_3d_Queue.push_back(instance); break;
     default: std::cerr<<"error? didnt handle yet lol (submitinstance)"<<std::endl; break;
   }
 }
@@ -862,38 +938,48 @@ void RenderServer::SubmitInstance(const RenderInstance& instance) {
 void RenderServer::ClearQueues(){
   opaqueQueue.clear();
   transparentQueue.clear();
-  uiQueue.clear();
+  ui_2d_Queue.clear();
+  ui_3d_Queue.clear();
 
 
 }
 
-void RenderServer::setProjectionUniform(GLuint programID, unsigned int BonusCase ){
+void RenderServer::setProjectionUniform(GLuint programID, RenderPassType passType){
+  GLint locProj = glGetUniformLocation(programID, "u_Projection");
+  GLint locCam = glGetUniformLocation(programID, "u_View");
+
+  if (passType == RenderPassType::World) {
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)RSwidth / (float)RSheight, 0.01f, 1000.0f);
+    glm::mat4 view = glm::lookAt(cameraPos, cameraLook, cameraUp);
+    if(locProj != -1) {
+      glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
+    }
+    if(locCam != -1) {
+      glUniformMatrix4fv(locCam, 1, GL_FALSE, glm::value_ptr(view));
+    }
+  }
   // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1000.0f, 1000.0f);
   // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1.0f, 1.0f);
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)RSwidth / (float)RSheight, 0.01f, 1000.0f);
   // glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 100.0f); 
   // glm::vec3 cameraLook  = glm::vec3(0.0f, 0.0f, 0.0f); 
   // glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
-  glm::mat4 view = glm::lookAt(cameraPos, cameraLook, cameraUp);
-  GLint locProj = glGetUniformLocation(programID, "u_Projection");
-  if(locProj != -1) {
-      glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
+  // glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)RSwidth / (float)RSheight, 0.01f, 1000.0f);
+  // glm::mat4 view = glm::lookAt(cameraPos, cameraLook, cameraUp);
+  else if (passType == RenderPassType::UI_Flat) {
+    glm::mat4 projection = glm::ortho(0.0f, (float)RSwidth, (float)RSheight, 0.0f, -1.0f, 1.0f);
+    glm::mat4 view = glm::mat4(1.0f); 
+    glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(locCam,  1, GL_FALSE, glm::value_ptr(view));
   }
-    
-  GLint locCam = glGetUniformLocation(programID, "u_View");
+  else if (passType == RenderPassType::UI_3D) {
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f); 
+    glm::mat4 view = glm::lookAt(cameraPos, cameraLook, cameraUp);
+    view[3][0] = 0.0f; 
+    view[3][1] = 0.0f;
+    view[3][2] = -3.0f; //get away from the camera brah
 
-  if(locCam != -1) {
-      if(BonusCase == 1){ 
-        glm::mat4 gizmoView = view;
-
-        gizmoView[3][0] = 0.0f;
-        gizmoView[3][1] = 0.0f;
-        gizmoView[3][2] = -2.0f;
-        glUniformMatrix4fv(locCam, 1, GL_FALSE, glm::value_ptr(gizmoView));
-      }
-      else{
-      glUniformMatrix4fv(locCam, 1, GL_FALSE, glm::value_ptr(view));
-      }
+    glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(locCam,  1, GL_FALSE, glm::value_ptr(view));
   }
 
 }

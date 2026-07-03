@@ -26,8 +26,10 @@
 #include <stdbool.h>
 #include "Engine.hpp"
 
+#include "UiNode.hpp"
 #include <filesystem>
 #include "AxisGuide.hpp"
+#include "wtypes/Vec2.hpp"
 #include "SpriteElement.hpp"
 
 static std::filesystem::path EXECUTABLE_DIR;
@@ -113,15 +115,53 @@ int main(int argc, char* argv[]) {
 
   mySphere->position = Vec3(-30.5f,0.0f,0.0f);
   mySphere->scale = Vec3(1.0f, 1.0f,1.0f);
+
+
+  AxisGuide* UI_ELEM_2d = new AxisGuide();
+  UI_ELEM_2d->init("../assets/meshes/Axis_v2.obj", "../assets/textures/Axis_guide.png", Vec2(500.0f,500.0f),Vec2(0.0f,0.0f), UIAnchor::TopRight,UIPivot::Center);
+  Engine::Get().addNode(UI_ELEM_2d);
+  // devNode = UI_ELEM_2d;
+  // UI_ELEM_2d->position.z-=5.0f;
+  UI_ELEM_2d->scale*=0.05;
+
+  //
+  // UINode* AA = new UINode();
+  // AA->init("../assets/textures/Lain.jpg", Vec2(500.0f,500.0f),Vec2(10.0f,10.0f), UIAnchor::BottomLeft,UIPivot::Center);
+  // Engine::Get().addNode(AA);
+  // AA->scale*=10.0f;
+  // UINode* BB = new UINode();
+  // BB->init("../assets/textures/Lain.jpg", Vec2(500.0f,500.0f),Vec2(10.0f,10.0f), UIAnchor::BottomLeft,UIPivot::Center);
+  // Engine::Get().addNode(BB);
+  // AA->addChild(BB);
+//
+//   AxisGuide* UI_ELEM_2d = new AxisGuide();
+//   UI_ELEM_2d->init("../assets/meshes/Comp2.obj", "../assets/textures/Compass.png", Vec2(400.0f,400.0f),Vec2(10.0f,10.0f), UIAnchor::TopCenter,UIPivot::Center);
+//   Engine::Get().addNode(UI_ELEM_2d);
+//   UI_ELEM_2d->scale*=0.5;
+// UI_ELEM_2d->rotation.z=180;
+//   UI_ELEM_2d->position.z+=0.1f;
+// UI_ELEM_2d->rotation.y=20;
+
   // mySphere->scale = Vec3(50.0f, 50.0f,1.0f);
-  
+  //
+  // MeshNode* Axes2 = new MeshNode();
+  // Axes2->init("../assets/meshes/Axis_v2.obj", "../assets/textures/Axis_guide.png", RenderItemLayer::OPAQUE);
+  //
+  // Axes2->position = Vec3(0.0f,0.0f,-20.0f);
+  //
+  // Axes2->scale = Vec3(1.0f, 1.0f, 1.0f);
+  // Engine::Get().addNode(Axes2);
+  // AxisGuide* Axis_guide = new AxisGuide();
+  // Axis_guide->init("../assets/meshes/Axis_guide.obj", "../assets/textures/Axis_guide.png", RenderItemLayer::UI_3D);
+  // Axis_guide->position = Vec3(0.0f,0.0f,0.0f);
+  // Axis_guide->scale = Vec3(1.0f, 1.0f, 1.0f);
+  // Axis_guide->scale *=0.7;
+  // Engine::Get().addNode(Axis_guide);
+  //
 
-
-  AxisGuide* Axis_guide = new AxisGuide();
-  Axis_guide->init("../assets/meshes/Axis_guide.obj", "../assets/textures/Axis_guide.png", RenderItemLayer::UI);
-  Axis_guide->position = Vec3(-0.5f,0.0f,0.0f);
-  Axis_guide->scale = Vec3(1.0f, 1.0f, 1.0f);
-  Engine::Get().addNode(Axis_guide);
+  // UINode* UI_ELEM_2d = new UINode();
+  // UI_ELEM_2d->init("../assets/textures/X.png", Vec2(100.0f,100.0f),Vec2(10.0f,10.0f), UIAnchor::TopRight,UIPivot::Center);
+  // Engine::Get().addNode(UI_ELEM_2d);
   // MeshNode* wolf = new MeshNode();
   // wolf->init("../assets/meshes/WOLF.obj", "../assets/textures/WOLF.png", RenderItemLayer::OPAQUE);
   // wolf->position = Vec3(-30.5f,40.0f,0.0f);
@@ -129,12 +169,12 @@ int main(int argc, char* argv[]) {
   // wolf->scale *=15.0f;
   //Engine::Get().addNode(wolf);
   //
-  // MeshNode* Horse = new MeshNode();
-  // Horse->init("../assets/meshes/Horse.obj", "../assets/textures/Horse.jpg", RenderItemLayer::OPAQUE);
-  // Horse->position = Vec3(30.5f,40.0f,0.0f);
-  // Horse->scale = Vec3(1.0f, 1.0f,1.0f);
-  // Horse->scale*=0.01f;
-  // Engine::Get().addNode(Horse);
+  MeshNode* Horse = new MeshNode();
+  Horse->init("../assets/meshes/Horse.obj", "../assets/textures/Horse.jpg", RenderItemLayer::OPAQUE);
+  Horse->position = Vec3(30.5f,40.0f,0.0f);
+  Horse->scale = Vec3(1.0f, 1.0f,1.0f);
+  Horse->scale*=0.01f;
+  Engine::Get().addNode(Horse);
   //
   //
   // MeshNode* Fish = new MeshNode();

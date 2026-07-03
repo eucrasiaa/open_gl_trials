@@ -5,7 +5,6 @@
 #include "RenderServer.hpp"
 #include "TextureManager.hpp"
 
-
 class RenderNode : public Node {
   public:
     GLuint textureID = 0;

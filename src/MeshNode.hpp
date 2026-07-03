@@ -13,7 +13,7 @@ public:
     RenderItemLayer renderLayer = RenderItemLayer::OPAQUE;
 
     SamplerType samplerType = SamplerType::LINEAR;   
-    void init(const std::string& objPath, const std::string& texturePath, RenderItemLayer layer, SamplerType stype=SamplerType::LINEAR) {
+    virtual void init(const std::string& objPath, const std::string& texturePath, RenderItemLayer layer) {
         this->textureID = TextureManager::Get().getTexture(texturePath);
         this->renderLayer = layer;
 
@@ -22,7 +22,6 @@ public:
         
         this->vaoID = mesh.vaoID;
         this->indexCount = mesh.indexCount;
-        this->samplerType= stype;
     }
     void update(double dt) override {
 #ifdef NODE_DEBUG
@@ -46,7 +45,7 @@ public:
         instance.indexCount = this->indexCount;
         instance.layer = this->renderLayer;
 
-        instance.LinearNearest = samplerType;
+        // instance.LinearNearest = samplerType;
         RenderServer::Get().SubmitInstance(instance);
 
         for (auto *elem : children) {

@@ -92,6 +92,7 @@ void Node::computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty) 
 void Node::addChild(Node *node) {
   if (node != nullptr) {
     children.push_back(node);
+    node->parent=this;
   }
 }
 

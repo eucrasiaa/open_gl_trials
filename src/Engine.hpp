@@ -4,6 +4,8 @@
 #include <glm/trigonometric.hpp>
 #include "RenderServer.hpp"
 #include "Node.hpp"
+#include "UI3DMeshNode.hpp"
+#include "UiNode.hpp"
 
 struct InputState{
   bool ToggleMouse = false;
@@ -45,7 +47,11 @@ std::vector<std::string> Shaders = {};
     float movementSpeed    = 0.2f; 
     void MoveCamera();
 
-
+    void DevPivotRot(int direction, UINode* d);
+    void DevAnchorRot(int direction, UINode* d);
+    UINode* devNode = nullptr;
+    UINode* devNode_2 = nullptr;
+    // UINode* devNode = nullptr;
   private:
     void handleEvents();
     void update(double dt);

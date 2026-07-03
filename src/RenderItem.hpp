@@ -13,6 +13,7 @@ struct Vertex {
   glm::vec3 position;
   glm::vec4 color;
   glm::vec2 uv;
+  glm::vec3 normal;
   float texIndex;
 };
 
@@ -20,7 +21,8 @@ struct Vertex {
 enum class RenderItemLayer{
   OPAQUE,
   TRANSPARENT,
-  UI,
+  UI_3D,
+  UI_2D,
   SKYBOX,
   POSTPROCESS_WORLD,
   POSTPROCESS_SCREEN,
@@ -46,7 +48,12 @@ struct RenderInstance {
     GLuint indexCount = 6;
     std::string pipelineName = "MVP";
     RenderItemLayer layer = RenderItemLayer::OPAQUE;
-    SamplerType LinearNearest = SamplerType::LINEAR;
+    
+
+    bool useCustomViewport = false;
+    int vpX=0, vpY=0, vpWidth=0, vpHeight;
+
+    // SamplerType LinearNearest = SamplerType::LINEAR;
     bool isDirty = true;
         friend std::ostream& operator<<(std::ostream& os, const RenderInstance& ri) {
         os << "RenderInstance {\n"
@@ -59,7 +66,7 @@ struct RenderInstance {
            << "  layer: " << static_cast<int>(ri.layer) << ",\n"
            << "  isDirty: " << (ri.isDirty ? "true" : "false") << "\n"
            << "}";
-        term::move_up(11,true);
+        term::move_up(10,true);
         return os;
     }
 };

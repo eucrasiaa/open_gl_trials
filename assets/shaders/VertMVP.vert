@@ -2,14 +2,16 @@
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec4 a_Color;
 layout(location = 2) in vec2 a_UV;
-layout(location = 3) in float a_TexIndex;
+layout(location = 3) in vec3 a_Normal;
+layout(location = 4) in float a_TexIndex;
 
 //4,5,6,7
-layout (location = 4) in mat4 a_InstanceMatrix;
+layout (location = 5) in mat4 a_InstanceMatrix;
 
 // uniform mat4 u_Model;
 uniform mat4 u_Projection;
 uniform mat4 u_View;
+uniform float u_Thick;
 
 out vec4 v_Color;
 out vec2 v_UV;

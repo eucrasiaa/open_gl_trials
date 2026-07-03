@@ -17,7 +17,7 @@ public:
   bool isDirty = true; // for initial sync math!  
   std::vector<Node *> children;
 
-
+  Node* parent=nullptr;
 
   glm::vec2 getWorldScale() const {
     float worldWidth  = glm::length(glm::vec3(globalTransform[0]));

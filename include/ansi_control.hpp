@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string_view>
 #include <span>
+#include <print>
 
 
 // Terminal Control Sequences
@@ -72,6 +73,17 @@ namespace term {
     std::cout << "\033[" << rows << "A" << (clear ? TERM_CLEAR_LINE : "");
   }
 
+  inline void move_up_c(int rows) {
+    for (int i=0;i<rows;i++){
+      std::cout << "\033[1A" <<TERM_CLEAR_LINE;
+    }
+  }
+
+  inline void move_down_c(int rows) {
+    for (int i=0;i<rows;i++){
+      std::cout << "\033[1B" <<TERM_CLEAR_LINE;
+    }
+  }
   inline void clear_line(){
     fputs(TERM_CLEAR_LINE,stdout);
   }
@@ -168,5 +180,42 @@ namespace term {
       }
       std::cout << "\n";
     }
+
+
+
+inline void print_engine_perf(double fps, double total_ms, double update_ms, double render_ms) {
+  // Move cursor back to home top-left position
+  std::print("{}", TERM_CURSOR_HOME);
+
+  const char* performance_color = (total_ms > 16.67) ? TERM_FG_B_RED : TERM_FG_B_GREEN;
+  double budget_percent = (total_ms / 16.67) * 100.0;
+
+  // Header Box Block - \033[2K clears the line before printing to remove older content overlaps
+  std::print("\033[2K{}{}{}┌────────────────────────────────────────┐\n", TERM_BOLD, TERM_FG_B_CYAN, TERM_RESET);
+  std::print("\033[2K{}{}│ {}{}STATS:{}│\n", TERM_BOLD, TERM_FG_B_CYAN, TERM_FG_B_YELLOW, TERM_BOLD, " ");
+  std::print("\033[2K{}{}├────────────────────────────────────────┤\n{}", TERM_BOLD, TERM_FG_B_CYAN, TERM_RESET);
+
+  // Frame Rate Row
+  std::print("\033[2K{}{}│ {}Frame Rate:  {}{:>6.2f} FPS{} │\n", 
+             TERM_BOLD, TERM_FG_B_CYAN, TERM_FG_WHITE, performance_color, fps, TERM_RESET);
+
+  // Frame Budget Row
+  std::print("\033[2K{}{}│ {}Frame Budget: {}{:>6.2f} ms {}({:>5.1f}%%){} │\n", 
+             TERM_BOLD, TERM_FG_B_CYAN, TERM_FG_WHITE, performance_color, total_ms, TERM_DIM, budget_percent, TERM_RESET);
+
+  std::print("\033[2K{}{}├────────────────────────────────────────┤\n{}", TERM_BOLD, TERM_FG_B_CYAN, TERM_RESET);
+
+  // Engine Work Breakdowns
+  std::print("\033[2K{}{}│ {} -> {}Core Update: {:>6.10f} ms{} │\n", 
+             TERM_BOLD, TERM_FG_B_CYAN, TERM_RESET, TERM_FG_B_BLUE, update_ms, TERM_RESET);
+
+  std::print("\033[2K{}{}│ {} -> {}GPU Render:  {:>6.10f} ms{} │\n", 
+             TERM_BOLD, TERM_FG_B_CYAN, TERM_RESET, TERM_FG_B_MAGENTA, render_ms, TERM_RESET);
+
+  std::print("\033[2K{}{}└────────────────────────────────────────┘\n{}", TERM_BOLD, TERM_FG_B_CYAN, TERM_RESET);
+  
+  // Flash out stream
+  fflush(stdout);
+}
 
 }
