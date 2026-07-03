@@ -35,10 +35,10 @@ void RenderServer::render(double dt) {
   //   });
 
 std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
-    // if (a.vaoID != b.vaoID) {
+    if (a.vaoID != b.vaoID) {
         return a.vaoID < b.vaoID; // mesh types
-    // }
-    // return a.textureID < b.textureID; // cubes by texture
+    }
+    return a.textureID < b.textureID; // cubes by texture
 });
   // 2. sort transparent by camera dist? see notes
   // TODO: eventually tie to camera pos i think
@@ -192,7 +192,7 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   glDisable(GL_DEPTH_TEST); // UI ignores depth  no need to reset
   glEnable(GL_BLEND); // it does need transparency. probably?
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
-  // pickedPipeline = BindPipeline("UI");
+  pickedPipeline = BindPipeline("UI");
   if (pickedPipeline == -1) return;
 
   int gizmoSize = 150;
@@ -251,14 +251,13 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
 
 
 void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
-  TextureManager *tm = &TextureManager::Get();
   if (queue.empty()) return;
   GLuint currentVAO = queue[0].vaoID == 0 ? gVertexArrayObject : queue[0].vaoID;
-  // GLuint currentTexture = queue[0].textureID;
+  GLuint currentTexture = queue[0].textureID;
   GLuint currentIndexCount = queue[0].indexCount;
   // collect 
   std::vector<glm::mat4> batchMatrices;
-  std::vector<GLuint64> batchHandles; // collect the bindless 
+  
   // bind 2d VAO here
   glBindVertexArray(gVertexArrayObject);
 #ifdef RENDERSERVER_DEBUG_HEAVY
@@ -267,26 +266,19 @@ void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
   for (size_t i = 0; i < queue.size(); ++i) {
     const auto& instance = queue[i];
     GLuint instanceVAO = instance.vaoID == 0 ? gVertexArrayObject : instance.vaoID;
-    if (instanceVAO != currentVAO || instance.indexCount  != currentIndexCount) {
-      
-            FlushInstancedBindlessBatch(currentVAO, currentIndexCount, batchMatrices, batchHandles);
-            // FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+    if (instanceVAO != currentVAO || instance.textureID != currentTexture) {
+            FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
             
             currentVAO = instanceVAO;
-            // currentTexture = instance.textureID;
+            currentTexture = instance.textureID;
             currentIndexCount = instance.indexCount;
             batchMatrices.clear();
         }
         batchMatrices.push_back(instance.globalTransform);
-        // samplerType.push_back(instance.LinearNearest);
-        // true = Linear false = nearest
-    GLuint64 selectedHandle = instance.LinearNearest ? instance.linHandle : instance.nearHandle; 
     batchMatrices.push_back(instance.globalTransform);
-    // samplerType.push_back(instance.LinearNearest);
     // batchMatrices.push_back(instance.globalTransform);
   }
-  FlushInstancedBindlessBatch(currentVAO, currentIndexCount, batchMatrices, batchHandles);
-  // FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+  FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
   // FlushInstancedBatch2d(currentTexture, batchMatrices);
   //FlushInstancedBatch(currentTexture, batchMatrices);
   glBindVertexArray(0);
@@ -296,32 +288,6 @@ void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
 void RenderServer::FlushInstancedBatch2d(GLuint textureID, const std::vector<glm::mat4>& matrices){
   
   FlushInstancedBatch(gVertexArrayObject, textureID, 6, matrices);
-}
-
-void RenderServer::FlushInstancedBindlessBatch(GLuint vaoID, GLuint indexCount, const std::vector<glm::mat4>& matrices, const std::vector<GLuint64>& handles){
-
-
-#ifdef RENDERSERVER_DEBUG_HEAVY
-  std::cerr<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
-    for (const auto& mat : matrices) {
-        std::cout << mat << std::endl;
-    }
-#endif
-  glBindVertexArray(vaoID); // Now it's dynamic!
-  glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
-
-
-  size_t matrixSize = matrices.size() * sizeof(glm::mat4);
-  size_t handleSize = handles.size() * sizeof(GLuint64);
-  // data
-  // should i resize in init??
-  glBufferData(GL_ARRAY_BUFFER, matrixSize + handleSize, nullptr, GL_STREAM_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, matrixSize, matrices.data());
-  glBufferSubData(GL_ARRAY_BUFFER, matrixSize, handleSize, handles.data());
-  
-  glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr, matrices.size());
-  
-
 }
 #include <glm/gtx/io.hpp>
 void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices) {
@@ -336,17 +302,13 @@ void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint in
   // texture bind:
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, textureID);
-  glBindSampler(0,linearSampler);  
-  //
-  // glActiveTexture(GL_TEXTURE1);
-  // glBindTexture(GL_TEXTURE_2D, textureID); 
-  // glBindSampler(1, nearestSampler); 
+  
 
-  //  if (useLinearFilter) {
-  //     glBindSampler(0, linearSampler); 
-  // } else {
-  //     glBindSampler(0, nearestSampler);
-  // }
+   if (useLinearFilter) {
+      glBindSampler(0, linearSampler);  // Binds to Texture Unit 0
+  } else {
+      glBindSampler(0, nearestSampler); // Binds to Texture Unit 0
+  }
 
   glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, matrices.size() * sizeof(glm::mat4), matrices.data());
@@ -438,8 +400,8 @@ bool RenderServer::init(const char* title, int width, int height){
   FrameBufferInit();
   InitPipelines();
   InitSamplers();
-  // must come after Sampler Init!
   TextureManager::Get().init(linearSampler,nearestSampler);
+
   return true;
 }
 
@@ -591,10 +553,10 @@ void RenderServer::VertexSpecification(){
 
   // static 1x1 buff for basic 
   std::vector<Vertex> quadVertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0, 0},
-        {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0, 0}, 
-        {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0, 0},
-        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, 0, 0}
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0.0f},
+        {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0.0f}, 
+        {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0.0f},
+        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, 0.0f}
   };
   std::vector<GLuint> quadIndices = {0, 1, 2, 2, 3, 0}; //0 1 2 for tri 1, 2 3 0 for tri2
 
@@ -617,8 +579,7 @@ void RenderServer::VertexSpecification(){
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
 
   glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3,1,GL_UNSIGNED_INT64_ARB, strideSize, (void*)offsetof(Vertex, ))
-  // glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
 
 
   // IBO 

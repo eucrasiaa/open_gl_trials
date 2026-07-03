@@ -13,9 +13,7 @@ struct Vertex {
   glm::vec3 position;
   glm::vec4 color;
   glm::vec2 uv;
-  GLuint64 linHandle;
-  GLuint64 nearHandle;
-  // float texIndex;
+  float texIndex;
 };
 
 
@@ -43,9 +41,7 @@ using RenderItemID = uint32_t;
 struct RenderInstance { 
     RenderItemID id; //who
     glm::mat4 globalTransform; // where
-    // GLuint textureID = 0; // which texture 
-    GLuint64 linHandle =0;
-    GLuint64 nearHandle=0;
+    GLuint textureID = 0; // which texture 
     GLuint vaoID=0; // the shape (assumes 0 for universal for now)
     GLuint indexCount = 6;
     std::string pipelineName = "MVP";
@@ -56,15 +52,14 @@ struct RenderInstance {
         os << "RenderInstance {\n"
            << "  id: " << ri.id << ",\n"
            << "  globalTransform: " << glm::to_string(ri.globalTransform) << ",\n"
-           << "  LinearHandle: " << ri.linHandle << ",\n"
-           << "  NearestHandle: " << ri.linHandle << ",\n"
+           << "  textureID: " << ri.textureID << ",\n"
            << "  vaoID: " << ri.vaoID << ",\n"
            << "  indexCount: " << ri.indexCount << ",\n"
            << "  pipelineName: \"" << ri.pipelineName << "\",\n"
            << "  layer: " << static_cast<int>(ri.layer) << ",\n"
            << "  isDirty: " << (ri.isDirty ? "true" : "false") << "\n"
            << "}";
-        term::move_up(12,true);
+        term::move_up(11,true);
         return os;
     }
 };

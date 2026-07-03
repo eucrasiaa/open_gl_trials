@@ -52,8 +52,7 @@ MeshData MeshManager::loadMesh(const std::string& filepath, GLuint instanceVBO) 
                 }
 
                 vertex.color = {1.0f, 1.0f, 1.0f, 1.0f};
-                vertex.linHandle = 0;
-                vertex.nearHandle=0;
+                vertex.texIndex = 0.0f;
 
                 if (uniqueVertices.count(vertex) == 0) {
                     uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
@@ -86,7 +85,7 @@ MeshData MeshManager::loadMesh(const std::string& filepath, GLuint instanceVBO) 
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
         glEnableVertexAttribArray(3);
-        glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT64_ARB, sizeof(Vertex), (void*)offsetof(Vertex, linHandle)); 
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
 
         // instance attributes (link this vao to your global instance vbo)
         glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);

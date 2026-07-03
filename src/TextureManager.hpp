@@ -3,10 +3,6 @@
 #include <unordered_map>
 #include <string>
 
-struct MaterialHandles{
-  GLuint64 linHandle; 
-  GLuint64 nearHandle;
-};
 class TextureManager{
   private:
     GLuint linearSampler=0;
@@ -38,9 +34,7 @@ class TextureManager{
       return instance;
     }
 
-    //TODO make on init only grab what we actually will use dont bind both
-    //TODO bitmask
-    MaterialHandles getTexture(const std::string& filePath);
+    GLuint getTexture(const std::string& filePath);
     void Release(const std::string& filePath);
     
 };
