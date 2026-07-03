@@ -17,12 +17,12 @@ bool Engine::init(const char* title, int width, int height) {
 
 
   UINode* UI_ELEM_2d = new UINode();
-  UI_ELEM_2d->init("../assets/textures/Lain.jpg", Vec2(250.0f,250.0f),Vec2(0.0f,0.0f), UIAnchor::Center,UIPivot::Center);
+  UI_ELEM_2d->init("../assets/textures/_/_lain.jpg", Vec2(250.0f,250.0f),Vec2(0.0f,0.0f), UIAnchor::Center,UIPivot::Center);
   devNode = UI_ELEM_2d;
   // devNode->position.y+=5.0f;
   // UI_ELEM_2d->position.z-=5.0f;
   UINode* UI_ELEM_2d_2 = new UINode();
-  UI_ELEM_2d_2->init("../assets/textures/Lain2.jpg", Vec2(100.0f,100.0f),Vec2(0.0f,0.0f), UIAnchor::TopRight,UIPivot::Center);
+  UI_ELEM_2d_2->init("../assets/textures/_/_lain2.jpg", Vec2(100.0f,100.0f),Vec2(0.0f,0.0f), UIAnchor::TopRight,UIPivot::Center);
   // UI_ELEM_2d_2->positio;
   UI_ELEM_2d->addChild(UI_ELEM_2d_2);
     Engine::Get().addNode(UI_ELEM_2d);

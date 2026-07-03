@@ -779,11 +779,14 @@ void RenderServer::InitPipelines(){
 
     { "WorldPostProcess", "../assets/shaders/WorldPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
 
-    { "Toon", "../assets/shaders/Toon.frag",  "../assets/shaders/PostProcess.vert"},  
-    { "Sobel", "../assets/shaders/Sobel.frag",  "../assets/shaders/PostProcess.vert"},  
-    { "Dither", "../assets/shaders/Dither.frag",  "../assets/shaders/PostProcess.vert"},  
-    { "Glitch", "../assets/shaders/Glitch.frag",  "../assets/shaders/PostProcess.vert"},  
     { "ScreenPostProcess", "../assets/shaders/ScreenPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
+    
+
+
+    { "Toon", "../assets/shaders/_/_Toon.frag",  "../assets/shaders/PostProcess.vert"},  
+    { "Sobel", "../assets/shaders/_/_Sobel.frag",  "../assets/shaders/PostProcess.vert"},  
+    { "Dither", "../assets/shaders/_/_Dither.frag",  "../assets/shaders/PostProcess.vert"},  
+    { "Glitch", "../assets/shaders/_/_Glitch.frag",  "../assets/shaders/PostProcess.vert"},  
     // { "PostProcess", "assets/shaders/FullscreenQuad.vert", "assets/shaders/PostProcess.frag" },
     // { "ShadowMap", "assets/shaders/Shadow.vert", "assets/shaders/Shadow.frag" }
   };

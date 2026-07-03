@@ -163,14 +163,14 @@ int main(int argc, char* argv[]) {
   // UI_ELEM_2d->init("../assets/textures/X.png", Vec2(100.0f,100.0f),Vec2(10.0f,10.0f), UIAnchor::TopRight,UIPivot::Center);
   // Engine::Get().addNode(UI_ELEM_2d);
   // MeshNode* wolf = new MeshNode();
-  // wolf->init("../assets/meshes/WOLF.obj", "../assets/textures/WOLF.png", RenderItemLayer::OPAQUE);
+  // wolf->init("../assets/meshes/_/_wolf.obj", "../assets/textures/_/wolf.png", RenderItemLayer::OPAQUE);
   // wolf->position = Vec3(-30.5f,40.0f,0.0f);
   // wolf->scale = Vec3(1.0f, 1.0f,1.0f);
   // wolf->scale *=15.0f;
   //Engine::Get().addNode(wolf);
   //
   MeshNode* Horse = new MeshNode();
-  Horse->init("../assets/meshes/Horse.obj", "../assets/textures/Horse.jpg", RenderItemLayer::OPAQUE);
+  Horse->init("../assets/meshes/_/_horse.obj", "../assets/textures/_/_horse.jpg", RenderItemLayer::OPAQUE);
   Horse->position = Vec3(30.5f,40.0f,0.0f);
   Horse->scale = Vec3(1.0f, 1.0f,1.0f);
   Horse->scale*=0.01f;

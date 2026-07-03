@@ -6,4 +6,7 @@ srcGraph.py
 source_graph.dot
 detailed_source_graph.png
 
-assets/*
+assets/models/_
+assets/textures/_
+assets/shaders/_
+_*
