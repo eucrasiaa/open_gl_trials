@@ -8,13 +8,18 @@
 
 class RenderNode : public Node {
   public:
-    GLuint textureID = 0;
+    GLuint64 linHandle = 0;
+    GLuint64 nearHandle=0;
     RenderItemLayer renderLayer = RenderItemLayer::OPAQUE;
     RenderNode() = default;
-
-    virtual void init(const std::string &texturePath, RenderItemLayer layer) {
-      this->textureID = TextureManager::Get().getTexture(texturePath);
+    SamplerType samplerType = SamplerType::LINEAR;   
+    virtual void init(const std::string &texturePath, RenderItemLayer layer, SamplerType stype=SamplerType::LINEAR) {
+      MaterialHandles tmp = TextureManager::Get().getTexture(texturePath);
+      
+      this->linHandle = tmp.linHandle;
+      this->nearHandle = tmp.nearHandle;
       this->renderLayer = layer;
+      this->samplerType= stype;
     }
 
     void render(const glm::mat4 &parentTransform, bool parentIsDirty) override {
@@ -24,8 +29,12 @@ class RenderNode : public Node {
       computeTransforms(parentTransform, parentIsDirty);
       RenderInstance instance;
       instance.globalTransform = this->globalTransform;
-      instance.textureID = this->textureID;
+      // instance.textureID = this->textureID;
+
+      instance.linHandle = this->linHandle;
+      instance.nearHandle = this->nearHandle;
       instance.layer = this->renderLayer;
+      instance.LinearNearest = samplerType;
       RenderServer::Get().SubmitInstance(instance);
       for (auto *elem : children) {
         elem->render(this->globalTransform, this->isDirty);

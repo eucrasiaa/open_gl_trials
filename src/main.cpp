@@ -1,7 +1,5 @@
 
-// #define RENDERSERVER_DEBUG
 
-#include <filesystem>
 #if defined(_WIN32)
   // #define NOMINMAX
   // #define WIN32_LEAN_AND_MEAN
@@ -28,6 +26,8 @@
 #include <stdbool.h>
 #include "Engine.hpp"
 
+#include <filesystem>
+#include "AxisGuide.hpp"
 #include "SpriteElement.hpp"
 
 static std::filesystem::path EXECUTABLE_DIR;
@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
   }
   EXECUTABLE_DIR = std::filesystem::weakly_canonical(std::filesystem::path(buffer)).parent_path();
 #endif 
+
   SDL_SetMainReady();
   if (!Engine::Get().init("OpenGL Engine Layout", 1280, 720)) {
     return 1;
@@ -113,8 +114,14 @@ int main(int argc, char* argv[]) {
   mySphere->position = Vec3(-30.5f,0.0f,0.0f);
   mySphere->scale = Vec3(1.0f, 1.0f,1.0f);
   // mySphere->scale = Vec3(50.0f, 50.0f,1.0f);
+  
 
 
+  AxisGuide* Axis_guide = new AxisGuide();
+  Axis_guide->init("../assets/meshes/Axis_guide.obj", "../assets/textures/Axis_guide.png", RenderItemLayer::UI);
+  Axis_guide->position = Vec3(-0.5f,0.0f,0.0f);
+  Axis_guide->scale = Vec3(1.0f, 1.0f, 1.0f);
+  Engine::Get().addNode(Axis_guide);
   // MeshNode* wolf = new MeshNode();
   // wolf->init("../assets/meshes/WOLF.obj", "../assets/textures/WOLF.png", RenderItemLayer::OPAQUE);
   // wolf->position = Vec3(-30.5f,40.0f,0.0f);
@@ -153,6 +160,7 @@ int main(int argc, char* argv[]) {
   myCube->scale    *=5.0f;
   myTriangle->scale*=5.0f;
   mySphere->scale  *=5.0f;
+  player->scale *= 1.0f;
 
   // for (auto& node : Engine::Get().sceneNodes) { 
   //   node->scale*=5;

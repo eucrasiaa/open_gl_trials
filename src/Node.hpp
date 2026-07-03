@@ -2,6 +2,7 @@
 #include "./wtypes/Vec3.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
+#include "Defines.h"
 
 class Node {
 public:

@@ -35,10 +35,10 @@ void RenderServer::render(double dt) {
   //   });
 
 std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, const RenderInstance& b) {
-    if (a.vaoID != b.vaoID) {
+    // if (a.vaoID != b.vaoID) {
         return a.vaoID < b.vaoID; // mesh types
-    }
-    return a.textureID < b.textureID; // cubes by texture
+    // }
+    // return a.textureID < b.textureID; // cubes by texture
 });
   // 2. sort transparent by camera dist? see notes
   // TODO: eventually tie to camera pos i think
@@ -78,6 +78,10 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
       glUniform1i(locTex, 0); // Tell the sampler to read from GL_TEXTURE0
   }
 
+  // if(!opaqueQueue.empty() ){
+  //   std::cout<<"\n\n\npushing\n\n\n"<<opaqueQueue[0]<<std::endl;
+  //
+  // }
   // camera matrix would go in here
   RenderQueue(opaqueQueue);
 
@@ -188,14 +192,20 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
   glDisable(GL_DEPTH_TEST); // UI ignores depth  no need to reset
   glEnable(GL_BLEND); // it does need transparency. probably?
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
-  pickedPipeline = BindPipeline("MVP");
+  // pickedPipeline = BindPipeline("UI");
   if (pickedPipeline == -1) return;
 
+  int gizmoSize = 150;
+  int margin = 20;
+  // glViewport(RSwidth - gizmoSize - margin, RSheight - gizmoSize - margin, gizmoSize, gizmoSize);
 
-  setProjectionUniform(pickedPipeline);
+  setProjectionUniform(pickedPipeline, 1);
 
-
-  RenderQueue(uiQueue);
+  if(!uiQueue.empty()){
+    std::cout<<"pushing"<<uiQueue[0]<<std::endl;
+  }
+  RenderQueue(uiQueue); 
+  // glViewport(0, 0, RSwidth, RSheight);
 
   // |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
   // |-|-|-|          Post-Process Screen Pass           |-|-|-|
@@ -241,34 +251,42 @@ std::sort(opaqueQueue.begin(), opaqueQueue.end(), [](const RenderInstance& a, co
 
 
 void RenderServer::RenderQueue(const std::vector<RenderInstance>& queue) {
+  TextureManager *tm = &TextureManager::Get();
   if (queue.empty()) return;
   GLuint currentVAO = queue[0].vaoID == 0 ? gVertexArrayObject : queue[0].vaoID;
-  GLuint currentTexture = queue[0].textureID;
+  // GLuint currentTexture = queue[0].textureID;
   GLuint currentIndexCount = queue[0].indexCount;
   // collect 
   std::vector<glm::mat4> batchMatrices;
-  
+  std::vector<GLuint64> batchHandles; // collect the bindless 
   // bind 2d VAO here
   glBindVertexArray(gVertexArrayObject);
-#ifdef RENDERSERVER_DEBUG
+#ifdef RENDERSERVER_DEBUG_HEAVY
   std::cout<<"hit renderQueue: sizeof "<<queue.size()<<std::endl;
 #endif
   for (size_t i = 0; i < queue.size(); ++i) {
     const auto& instance = queue[i];
     GLuint instanceVAO = instance.vaoID == 0 ? gVertexArrayObject : instance.vaoID;
-    if (instanceVAO != currentVAO || instance.textureID != currentTexture) {
-            FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+    if (instanceVAO != currentVAO || instance.indexCount  != currentIndexCount) {
+      
+            FlushInstancedBindlessBatch(currentVAO, currentIndexCount, batchMatrices, batchHandles);
+            // FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
             
             currentVAO = instanceVAO;
-            currentTexture = instance.textureID;
+            // currentTexture = instance.textureID;
             currentIndexCount = instance.indexCount;
             batchMatrices.clear();
         }
         batchMatrices.push_back(instance.globalTransform);
+        // samplerType.push_back(instance.LinearNearest);
+        // true = Linear false = nearest
+    GLuint64 selectedHandle = instance.LinearNearest ? instance.linHandle : instance.nearHandle; 
     batchMatrices.push_back(instance.globalTransform);
+    // samplerType.push_back(instance.LinearNearest);
     // batchMatrices.push_back(instance.globalTransform);
   }
-  FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
+  FlushInstancedBindlessBatch(currentVAO, currentIndexCount, batchMatrices, batchHandles);
+  // FlushInstancedBatch(currentVAO, currentTexture, currentIndexCount, batchMatrices);
   // FlushInstancedBatch2d(currentTexture, batchMatrices);
   //FlushInstancedBatch(currentTexture, batchMatrices);
   glBindVertexArray(0);
@@ -279,10 +297,36 @@ void RenderServer::FlushInstancedBatch2d(GLuint textureID, const std::vector<glm
   
   FlushInstancedBatch(gVertexArrayObject, textureID, 6, matrices);
 }
+
+void RenderServer::FlushInstancedBindlessBatch(GLuint vaoID, GLuint indexCount, const std::vector<glm::mat4>& matrices, const std::vector<GLuint64>& handles){
+
+
+#ifdef RENDERSERVER_DEBUG_HEAVY
+  std::cerr<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
+    for (const auto& mat : matrices) {
+        std::cout << mat << std::endl;
+    }
+#endif
+  glBindVertexArray(vaoID); // Now it's dynamic!
+  glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
+
+
+  size_t matrixSize = matrices.size() * sizeof(glm::mat4);
+  size_t handleSize = handles.size() * sizeof(GLuint64);
+  // data
+  // should i resize in init??
+  glBufferData(GL_ARRAY_BUFFER, matrixSize + handleSize, nullptr, GL_STREAM_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, matrixSize, matrices.data());
+  glBufferSubData(GL_ARRAY_BUFFER, matrixSize, handleSize, handles.data());
+  
+  glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr, matrices.size());
+  
+
+}
 #include <glm/gtx/io.hpp>
 void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices) {
   
-#ifdef RENDERSERVER_DEBUG
+#ifdef RENDERSERVER_DEBUG_HEAVY
   std::cerr<<"    flushing batch: id:"<<vaoID<<" textureID:"<<textureID<<" indexCount:"<<indexCount<<" some of matrix:";
     for (const auto& mat : matrices) {
         std::cout << mat << std::endl;
@@ -292,7 +336,18 @@ void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint in
   // texture bind:
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, textureID);
-  
+  glBindSampler(0,linearSampler);  
+  //
+  // glActiveTexture(GL_TEXTURE1);
+  // glBindTexture(GL_TEXTURE_2D, textureID); 
+  // glBindSampler(1, nearestSampler); 
+
+  //  if (useLinearFilter) {
+  //     glBindSampler(0, linearSampler); 
+  // } else {
+  //     glBindSampler(0, nearestSampler);
+  // }
+
   glBindBuffer(GL_ARRAY_BUFFER, gInstanceVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, matrices.size() * sizeof(glm::mat4), matrices.data());
 
@@ -334,7 +389,7 @@ bool RenderServer::init(const char* title, int width, int height){
   window = SDL_CreateWindow(title, 
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
       width, height, 
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_ALWAYS_ON_TOP);
+      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);// | SDL_WINDOW_ALWAYS_ON_TOP);
   if (!window) {
     std::cerr<<"Window Error: %s\n"<<SDL_GetError()<<"\n";
     return false;
@@ -377,12 +432,14 @@ bool RenderServer::init(const char* title, int width, int height){
   glEnable(GL_DEBUG_OUTPUT);
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Direct error feedback
   glDebugMessageCallback(glDebugOutput, nullptr);
-  TextureManager::Get().init();
   RSwidth = width;
   RSheight = height;
   VertexSpecification();
   FrameBufferInit();
   InitPipelines();
+  InitSamplers();
+  // must come after Sampler Init!
+  TextureManager::Get().init(linearSampler,nearestSampler);
   return true;
 }
 
@@ -534,10 +591,10 @@ void RenderServer::VertexSpecification(){
 
   // static 1x1 buff for basic 
   std::vector<Vertex> quadVertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0.0f},
-        {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0.0f}, 
-        {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0.0f},
-        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, 0.0f}
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, 0, 0},
+        {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, 0, 0}, 
+        {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0, 0},
+        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, 0, 0}
   };
   std::vector<GLuint> quadIndices = {0, 1, 2, 2, 3, 0}; //0 1 2 for tri 1, 2 3 0 for tri2
 
@@ -560,7 +617,8 @@ void RenderServer::VertexSpecification(){
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
 
   glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
+  glVertexAttribPointer(3,1,GL_UNSIGNED_INT64_ARB, strideSize, (void*)offsetof(Vertex, ))
+  // glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texIndex));
 
 
   // IBO 
@@ -613,8 +671,8 @@ void RenderServer::FrameBufferInit(){
   // create
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, RSwidth, RSheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   //configs
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, worldColorTex, 0);
 
 
@@ -640,8 +698,8 @@ void RenderServer::FrameBufferInit(){
   glGenTextures(1, &postColorTex);
   glBindTexture(GL_TEXTURE_2D, postColorTex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, RSwidth, RSheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postColorTex, 0);
 
   //no need for depth b/c its a 2d quad drawn ondo
@@ -652,6 +710,21 @@ void RenderServer::FrameBufferInit(){
   //unbind
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+void RenderServer::InitSamplers() {
+    glGenSamplers(1, &linearSampler);
+    glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glGenSamplers(1, &nearestSampler);
+    glSamplerParameteri(nearestSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glSamplerParameteri(nearestSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
 
 void RenderServer::InitPipelines(){
   // std::vector<std::string> LoadedShaders={
@@ -665,6 +738,9 @@ void RenderServer::InitPipelines(){
   std::vector<PipelineConfig> configs = {
     { "Basic", "../assets/shaders/VertexFirst.vert", "../assets/shaders/FragmentFirst.frag" },
     { "MVP", "../assets/shaders/VertMVP.vert", "../assets/shaders/FragMVP.frag" },
+
+    { "UI", "../assets/shaders/VertUI.vert",  "../assets/shaders/FragMVP.frag"},  
+
     { "WorldPostProcess", "../assets/shaders/WorldPostProcess.frag",  "../assets/shaders/PostProcess.vert"},  
     
     { "Toon", "../assets/shaders/Toon.frag",  "../assets/shaders/PostProcess.vert"},  
@@ -686,6 +762,9 @@ void RenderServer::InitPipelines(){
 
 
   for (const auto& config : configs) {
+#ifdef RENDERSERVER_DEBUG
+    std::cout<<config.name<< ": " << config.fragmentPath << " + " << config.vertexPath <<std::endl;
+#endif
     CreateGraphicsPipeline(config);
   }
 }
@@ -763,6 +842,9 @@ GLenum RenderServer::GetShaderTypeFromExtension(const std::string& filePath) {
 }
 
 GLuint RenderServer::CompileShader(GLuint type, const std::string& source){
+  #ifdef RENDERSERVER_DEBUG 
+    std::cout<<"Compiling: "<<std::endl;
+  #endif
   //oh boy 
   GLuint shaderObject = 0;
   if(type==GL_VERTEX_SHADER){
@@ -824,10 +906,10 @@ void RenderServer::ClearQueues(){
 
 }
 
-void RenderServer::setProjectionUniform(GLuint programID){
+void RenderServer::setProjectionUniform(GLuint programID, unsigned int BonusCase ){
   // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1000.0f, 1000.0f);
   // glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(RSwidth), 0.0f, static_cast<float>(RSheight), -1.0f, 1.0f);
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)RSwidth / (float)RSheight, 0.1f, 1000.0f);
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)RSwidth / (float)RSheight, 0.01f, 1000.0f);
   // glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 100.0f); 
   // glm::vec3 cameraLook  = glm::vec3(0.0f, 0.0f, 0.0f); 
   // glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -840,7 +922,17 @@ void RenderServer::setProjectionUniform(GLuint programID){
   GLint locCam = glGetUniformLocation(programID, "u_View");
 
   if(locCam != -1) {
+      if(BonusCase == 1){ 
+        glm::mat4 gizmoView = view;
+
+        gizmoView[3][0] = 0.0f;
+        gizmoView[3][1] = 0.0f;
+        gizmoView[3][2] = -2.0f;
+        glUniformMatrix4fv(locCam, 1, GL_FALSE, glm::value_ptr(gizmoView));
+      }
+      else{
       glUniformMatrix4fv(locCam, 1, GL_FALSE, glm::value_ptr(view));
+      }
   }
 
 }

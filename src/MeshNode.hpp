@@ -2,18 +2,24 @@
 #include "Node.hpp"
 #include "MeshManager.hpp"
 #include "RenderNode.hpp"
+#include "TextureManager.hpp"
 #include "glad/glad.h"
 #include "RenderServer.hpp"
 
 class MeshNode : public Node {
 public:
-    GLuint textureID = 0;
+    // GLuint textureID = 0;
+    GLuint64 linHandle = 0;
+    GLuint64 nearHandle=0;
     GLuint vaoID = 0;
     GLuint indexCount = 0;
     RenderItemLayer renderLayer = RenderItemLayer::OPAQUE;
 
-    void init(const std::string& objPath, const std::string& texturePath, RenderItemLayer layer) {
-        this->textureID = TextureManager::Get().getTexture(texturePath);
+    SamplerType samplerType = SamplerType::LINEAR;   
+    void init(const std::string& objPath, const std::string& texturePath, RenderItemLayer layer, SamplerType stype=SamplerType::LINEAR) {
+        MaterialHandles tmp = TextureManager::Get().getTexture(texturePath);
+        this->linHandle = tmp.linHandle;
+        this->nearHandle = tmp.nearHandle;
         this->renderLayer = layer;
 
         GLuint instanceVBO = RenderServer::Get().gInstanceVBO; 
@@ -21,9 +27,10 @@ public:
         
         this->vaoID = mesh.vaoID;
         this->indexCount = mesh.indexCount;
+        this->samplerType= stype;
     }
     void update(double dt) override {
-#ifdef NODE_DEBUF
+#ifdef NODE_DEBUG
       std::cout<<"MeshUpdateTick :"<< vaoID<<std::endl;
 #endif
       this->rotation.x += 45.0f * dt;    
@@ -38,12 +45,15 @@ public:
 
         RenderInstance instance;
         instance.globalTransform = this->globalTransform;
-        instance.textureID = this->textureID;
+        // instance. = this->textureID;
         
+        instance.linHandle = this->linHandle;
+        instance.nearHandle = this->nearHandle;
         instance.vaoID = this->vaoID;
         instance.indexCount = this->indexCount;
         instance.layer = this->renderLayer;
 
+        instance.LinearNearest = samplerType;
         RenderServer::Get().SubmitInstance(instance);
 
         for (auto *elem : children) {

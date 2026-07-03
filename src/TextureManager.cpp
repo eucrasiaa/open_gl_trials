@@ -2,26 +2,40 @@
 #include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-
+#include "Defines.h"
 void TextureManager::Release(const std::string& filePath) {
   auto it = textureCache.find(filePath); 
   if (it != textureCache.end()) {
     it->second.refCount--;
 
     if (it->second.refCount == 0) {
+      // RELEASE HANDLES FIRST
+      glMakeTextureHandleNonResidentARB(it->second.handleLinear);
+      glMakeTextureHandleNonResidentARB(it->second.handleNearest);
       glDeleteTextures(1, &it->second.id);
       textureCache.erase(it);
     }
   }
 }
 
-GLuint TextureManager::getTexture(const std::string& filePath) {   
+MaterialHandles TextureManager::getTexture(const std::string& filePath) {   
+#ifdef TEXTUREMGR_DEBUG 
+  std::cout<<"attempted to load "<<filePath<<std::endl;
+#endif
   auto it = textureCache.find(filePath); 
   if (it != textureCache.end()) {
+
+    #ifdef TEXTUREMGR_DEBUG 
+      std::cout<<"  Already Found! "<<filePath<<std::endl;
+    #endif
     it->second.refCount++; 
-    return it->second.id;
+    return MaterialHandles{it->second.handleLinear,it->second.handleNearest};
   }
   else {
+
+    #ifdef TEXTUREMGR_DEBUG 
+      std::cout<<"  New Texture loading start: "<<filePath<<std::endl;
+    #endif
     int localWidth = 0;
     int localHeight = 0;
     int localChannels = 0;
@@ -30,7 +44,7 @@ GLuint TextureManager::getTexture(const std::string& filePath) {
     //safety!! 
     if (!imageData) {
       std::cerr<<"failed to load image, name was: "<<filePath<<"\n";
-      return 0; 
+      return {0,0}; 
     }
 
     GLuint texture;
@@ -54,17 +68,29 @@ GLuint TextureManager::getTexture(const std::string& filePath) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 
+    // bindless texture attempt
+    GLuint64 handleLinear  = glGetTextureSamplerHandleARB(texture, linearSampler);
+    GLuint64 handleNearest = glGetTextureSamplerHandleARB(texture, nearestSampler);
+
+    glMakeTextureHandleResidentARB(handleLinear);
+    glMakeTextureHandleResidentARB(handleNearest);
+
     stbi_image_free(imageData);
     glBindTexture(GL_TEXTURE_2D, 0);
     TextureResource newResource;
     newResource.id = texture;
+    newResource.handleLinear = handleLinear;
+    newResource.handleNearest = handleNearest;
     newResource.refCount = 1;
     newResource.width = localWidth;
     newResource.height = localHeight;
     newResource.channels = localChannels;
+        #ifdef TEXTUREMGR_DEBUG 
     std::cout<<"loaded texture: "<<texture<<" "<<localWidth<<" "<<localHeight<<" "<<localChannels<<std::endl;
+#endif
     textureCache[filePath] = newResource;
 
-    return texture;
+    
+    return {handleLinear, handleNearest};
   }
 }

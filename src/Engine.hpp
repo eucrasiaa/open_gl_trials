@@ -1,6 +1,7 @@
 #pragma once
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
+#include <glm/trigonometric.hpp>
 #include "RenderServer.hpp"
 #include "Node.hpp"
 
@@ -35,6 +36,16 @@ std::vector<std::string> Shaders = {};
       return instance;
     }
 
+
+    //debug stuff 
+    float yaw   = glm::radians(-90.0f); 
+    float pitch = 0.0f;
+    float roll = 0.0f;
+    float mouseSensitivity = glm::radians(0.1f);
+    float movementSpeed    = 0.2f; 
+    void MoveCamera();
+
+
   private:
     void handleEvents();
     void update(double dt);
@@ -60,11 +71,5 @@ std::vector<std::string> Shaders = {};
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 
-    //debug stuff 
-    float yaw   = -90.0f; 
-    float pitch =   0.0f; 
-    float mouseSensitivity = 0.1f;
-    float movementSpeed    = 0.2f; 
-    void MoveCamera();
 
 };

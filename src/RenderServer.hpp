@@ -1,6 +1,6 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
-
+#include "Defines.h"
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
 #include <iostream>
@@ -75,7 +75,12 @@ class RenderServer {
     // framebuff for full screen postProcessing
     GLuint postFBO=0;
     GLuint postColorTex=0;
+      
 
+    GLuint linearSampler = 0;
+    GLuint nearestSampler = 0;
+
+    bool useLinearFilter = false;
     // ||||| instange management |||||
     // ||||||||||||||||||||||||||||||| 
 
@@ -97,6 +102,7 @@ class RenderServer {
     void VertexSpecification();
     void FrameBufferInit();
     void InitPipelines();
+    void InitSamplers();
     // init helpers
     //helper for initPipelines
     void CreateGraphicsPipeline(const PipelineConfig& config);
@@ -109,10 +115,12 @@ class RenderServer {
     // render stuff! mostly helpers
     void DrawFullScreenQuad();
     void RenderQueue(const std::vector<RenderInstance>& queue);
+    void FlushInstancedBindlessBatch(GLuint vaoID, GLuint indexCount, const std::vector<glm::mat4>& matrices, const std::vector<GLuint64>& handles);
+
     void FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices);
     void FlushInstancedBatch2d(GLuint textureID, const std::vector<glm::mat4>& matrices);
   
-    void setProjectionUniform(GLuint programID);
+    void setProjectionUniform(GLuint programID, unsigned int BonusCase =0);
 
     // class oop stuff
     RenderServer() = default;
@@ -134,7 +142,7 @@ class RenderServer {
     // |||||  MiscConfig  |||||
     // ||||||||||||||||||||||||
     bool only2D = true;
-    bool doWPP = true;
+    bool doWPP = false;
     bool doSPP = false;
     std::string PP = "WorldPostProcess";
 
