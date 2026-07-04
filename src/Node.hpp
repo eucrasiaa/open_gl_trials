@@ -10,8 +10,8 @@ public:
   // float rotation = 0.0f; // x/y tracking or angle mapping
   // Vec2 scale = Vec2(1.0f, 1.0f);
   glm::vec3 position = glm::vec3(0.0f);
-    glm::vec3 rotation = glm::vec3(0.0f); // x (pitch), y (yaw), z (roll) in degrees
-    glm::vec3 scale    = glm::vec3(1.0f);
+  glm::vec3 rotation = glm::vec3(0.0f); // x (pitch), y (yaw), z (roll) in degrees
+  glm::vec3 scale    = glm::vec3(1.0f);
   glm::mat4 localTransform = glm::mat4(1.0f);
   glm::mat4 globalTransform = glm::mat4(1.0f);
   bool isDirty = true; // for initial sync math!  
@@ -35,4 +35,6 @@ public:
   virtual void render(const glm::mat4& parentGlobal, bool parentIsDirty);
   void triggerCompute();
   virtual void computeTransforms(const glm::mat4& parentGlobal, bool parentIsDirty);
-};
+
+
+  };

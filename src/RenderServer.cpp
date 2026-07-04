@@ -1,7 +1,7 @@
 #include "RenderServer.hpp"
 #include "Engine.hpp"
 #include "RenderItem.hpp"
-#include "glad/glad.h"
+#include <glad/glad.h>
 #include <SDL_stdinc.h>
 #include <iostream>
 
@@ -353,6 +353,7 @@ void RenderServer::FlushInstancedBatch2d(GLuint textureID, const std::vector<glm
 
   FlushInstancedBatch(gVertexArrayObject, textureID, 6, matrices);
 }
+
 #include <glm/gtx/io.hpp>
 void RenderServer::FlushInstancedBatch(GLuint vaoID, GLuint textureID, GLuint indexCount, const std::vector<glm::mat4>& matrices) {
 

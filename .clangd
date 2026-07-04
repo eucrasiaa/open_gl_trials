@@ -1,18 +1,50 @@
 CompileFlags:
+  QueryDriver: [ "C:/msys64/ucrt64/bin/g++.exe" ]
+  Compiler: C:/msys64/ucrt64/bin/g++.exe
+
+---
+If:
+  PathMatch: glad/.*
+
+CompileFlags:
+  Remove: [-I*, -isystem*]
+Diagnostics:
+  Suppress: ["*"]
+
+---
+If:
+  PathMatch: .*src/.*
+
+CompileFlags:
   Add: [
-    "-DGL_GLEXT_PROTOTYPES",
-    "-include", "GL/gl.h" # fixes LSP 
-    "-xc++",
-    "-target", "x86_64-w64-mingw32",
-    "-isystem", "C:/msys64/ucrt64/include",
-    "-isystem", "C:/msys64/ucrt64/include/c++",
-    "-isystem", "C:/msys64/ucrt64/include/c++/x86_64-w64-mingw32"
+    -DGL_GLEXT_PROTOTYPES,
+    # -include, GL/gl.h,
+    # -include, GL/glext.h,
+    -finput-charset=utf-8,
+    -fexec-charset=utf-8
   ]
   Remove: [
-    "-include*glad.h" #for LSP
+    -include*glad\.h
   ]
 Diagnostics:
-  Suppress: [
-    "pp_hash_error"
-  ]
+  Suppress: [pp_hash_error, expected_unqualified_id]
 Compiler: C:/msys64/ucrt64/bin/g++.exe
+
+# CompileFlags:
+#   Add: [
+#     "-DGL_GLEXT_PROTOTYPES",
+#     "-include", "GL/gl.h" # fixes LSP 
+#     "-xc++",
+#     "-target", "x86_64-w64-mingw32",
+#     "-isystem", "C:/msys64/ucrt64/include",
+#     "-isystem", "C:/msys64/ucrt64/include/c++",
+#     "-isystem", "C:/msys64/ucrt64/include/c++/x86_64-w64-mingw32"
+#   ]
+#   Remove: [
+#     "-include*glad.h" #for LSP
+#   ]
+# Diagnostics:
+#   Suppress: [
+#     "pp_hash_error"
+#   ]
+# Compiler: C:/msys64/ucrt64/bin/g++.exe
